@@ -1,5 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import { AppShell } from '@/components/layout/AppShell'
 import { AllDocumentsClient } from '@/components/documents/AllDocumentsClient'
@@ -9,24 +8,7 @@ export default async function AllDocumentsPage({
 }: {
   searchParams: { status?: string; state?: string; q?: string }
 }) {
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name) {
-          return cookieStore.get(name)?.value
-        },
-        set(name, value, options) {
-          cookieStore.set(name, value, options)
-        },
-        remove(name, options) {
-          cookieStore.set(name, '', { ...options, maxAge: 0 })
-        },
-      },
-    }
-  )
+  const supabase = createClient()
 
   const { data: { user: authUser } } = await supabase.auth.getUser()
   if (!authUser) redirect('/auth/login')

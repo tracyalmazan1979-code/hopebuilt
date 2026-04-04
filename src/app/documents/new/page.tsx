@@ -8,9 +8,7 @@
 // ─────────────────────────────────────────────────────────────
 // src/app/documents/new/page.tsx
 
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
+import { requireAuth } from '@/lib/auth'
 import { AppShell } from '@/components/layout/AppShell'
 import { SubmitDocumentForm } from '@/components/documents/SubmitDocumentForm'
 import { PageHeader } from '@/components/ui'
@@ -20,30 +18,9 @@ export async function generateMetadata() {
 }
 
 export default async function NewDocumentPage() {
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name) {
-          return cookieStore.get(name)?.value
-        },
-        set(name, value, options) {
-          cookieStore.set(name, value, options)
-        },
-        remove(name, options) {
-          cookieStore.set(name, '', { ...options, maxAge: 0 })
-        },
-      },
-    }
-  )
+  const { supabase, profile } = await requireAuth('coordinator')
 
-  const { data: { user: authUser } } = await supabase.auth.getUser()
-  if (!authUser) redirect('/auth/login')
-
-  const [userResult, docTypesResult, campusesResult, meetingsResult] = await Promise.all([
-    supabase.from('users').select('*, organizations(*)').eq('id', authUser.id).single(),
+  const [docTypesResult, campusesResult, meetingsResult] = await Promise.all([
     supabase.from('document_types').select('*').eq('is_active', true).order('name'),
     supabase.from('campuses').select('*').eq('is_active', true).order('name'),
     supabase.from('meetings').select('id, title, meeting_date')
@@ -53,10 +30,8 @@ export default async function NewDocumentPage() {
       .limit(8),
   ])
 
-  if (!userResult.data) redirect('/auth/login')
-
   return (
-    <AppShell user={userResult.data} org={userResult.data.organizations} title="Submit Document">
+    <AppShell user={profile} org={profile.organizations} title="Submit Document">
       <div className="p-6">
         <PageHeader
           title="Submit Document for Review"

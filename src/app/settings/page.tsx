@@ -1,44 +1,20 @@
 // ── /settings/page.tsx ───────────────────────────────────────
 
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
+import { requireAuth } from '@/lib/auth'
 import { AppShell } from '@/components/layout/AppShell'
 import { PageHeader, SectionCard } from '@/components/ui'
 
 export default async function SettingsPage() {
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name) {
-          return cookieStore.get(name)?.value
-        },
-        set(name, value, options) {
-          cookieStore.set(name, value, options)
-        },
-        remove(name, options) {
-          cookieStore.set(name, '', { ...options, maxAge: 0 })
-        },
-      },
-    }
-  )
-  const { data: { user: au } } = await supabase.auth.getUser()
-  if (!au) redirect('/auth/login')
+  const { supabase, profile } = await requireAuth('admin')
 
-  const [userResult, recipientsResult] = await Promise.all([
-    supabase.from('users').select('*, organizations(*)').eq('id', au.id).single(),
-    supabase.from('agenda_recipients').select('*').order('full_name'),
-  ])
-  if (!userResult.data) redirect('/auth/login')
+  const { data: recipients } = await supabase
+    .from('agenda_recipients').select('*').order('full_name')
 
-  const org     = userResult.data.organizations
+  const org     = profile.organizations
   const settings = org?.settings ?? {}
 
   return (
-    <AppShell user={userResult.data} org={org} title="Settings">
+    <AppShell user={profile} org={org} title="Settings">
       <div className="p-6 space-y-6 max-w-3xl">
         <PageHeader title="Settings" subtitle="Organization configuration and preferences" />
 
@@ -87,7 +63,7 @@ export default async function SettingsPage() {
         {/* Agenda Recipients */}
         <SectionCard title="Agenda Email Recipients">
           <div className="space-y-2">
-            {(recipientsResult.data ?? []).map((r: any) => (
+            {(recipients ?? []).map((r: any) => (
               <div key={r.id} className="flex items-center gap-3 p-3 bg-surface-2 rounded-md border border-default">
                 <div className="flex-1">
                   <div className="text-sm font-semibold text-default">{r.full_name ?? r.email}</div>

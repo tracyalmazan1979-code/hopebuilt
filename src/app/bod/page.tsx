@@ -1,43 +1,16 @@
 // ── /bod/page.tsx ─────────────────────────────────────────────
 
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
+import { requireAuth } from '@/lib/auth'
 import { AppShell } from '@/components/layout/AppShell'
 import { PageHeader, EmptyState, Amount, PipelineBadge, StateBadge } from '@/components/ui'
 import { format, differenceInDays } from 'date-fns'
 import Link from 'next/link'
 import { clsx } from 'clsx'
 
-async function getUserAndOrg(supabase: any, uid: string) {
-  const { data } = await supabase.from('users').select('*, organizations(*)').eq('id', uid).single()
-  return data
-}
-
 export default async function BODPage() {
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name) {
-          return cookieStore.get(name)?.value
-        },
-        set(name, value, options) {
-          cookieStore.set(name, value, options)
-        },
-        remove(name, options) {
-          cookieStore.set(name, '', { ...options, maxAge: 0 })
-        },
-      },
-    }
-  )
-  const { data: { user: au } } = await supabase.auth.getUser()
-  if (!au) redirect('/auth/login')
+  const { supabase, profile } = await requireAuth('leadership')
 
-  const [user, bodItems, upcomingMeetings] = await Promise.all([
-    getUserAndOrg(supabase, au.id),
+  const [bodItems, upcomingMeetings] = await Promise.all([
     supabase.from('bod_items').select(`
       *,
       documents(campus_name, document_type_name, amount, state, pipeline_status, submitter_type, presenter_name)
@@ -48,8 +21,6 @@ export default async function BODPage() {
       .order('meeting_date', { ascending: true })
       .limit(5),
   ])
-
-  if (!user) redirect('/auth/login')
 
   const items = bodItems.data ?? []
   const meetings = upcomingMeetings.data ?? []
@@ -65,7 +36,7 @@ export default async function BODPage() {
   const totalValue = items.reduce((sum: number, i: any) => sum + (i.documents?.amount ?? 0), 0)
 
   return (
-    <AppShell user={user} org={user.organizations} title="BOD Items">
+    <AppShell user={profile} org={profile.organizations} title="BOD Items">
       <div className="p-6 space-y-6">
         <PageHeader
           title="🏛 Board of Directors Items"

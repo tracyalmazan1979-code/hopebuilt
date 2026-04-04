@@ -1,7 +1,6 @@
 // ── /committee/page.tsx ───────────────────────────────────────
 
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import { AppShell } from '@/components/layout/AppShell'
 import { PageHeader, SectionCard } from '@/components/ui'
@@ -50,24 +49,7 @@ const COMMITTEE_MEMBERS = [
 ]
 
 export default async function CommitteePage() {
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name) {
-          return cookieStore.get(name)?.value
-        },
-        set(name, value, options) {
-          cookieStore.set(name, value, options)
-        },
-        remove(name, options) {
-          cookieStore.set(name, '', { ...options, maxAge: 0 })
-        },
-      },
-    }
-  )
+  const supabase = createClient()
   const { data: { user: au } } = await supabase.auth.getUser()
   if (!au) redirect('/auth/login')
 
