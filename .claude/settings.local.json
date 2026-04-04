@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs ls:*)",
+      "Bash(rm:*)",
+      "Bash(npm run:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)",
+      "Bash(grep:*)",
+      "Bash(node:*)"
+    ]
+  }
+}

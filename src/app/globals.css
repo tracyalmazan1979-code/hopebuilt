@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design Tokens ─────────────────────────────────────────── */
+:root {
+  /* Surfaces */
+  --color-app:       #0D1117;
+  --color-surface:   #161B22;
+  --color-surface-2: #1C2230;
+  --color-surface-3: #21293A;
+
+  /* Borders */
+  --color-border:    rgba(255, 255, 255, 0.07);
+  --color-border-2:  rgba(255, 255, 255, 0.12);
+
+  /* Text */
+  --color-text:      #E6EDF3;
+  --color-muted:     #7D8998;
+  --color-dim:       #484F58;
+
+  /* Brand */
+  --color-amber:     #F59E0B;
+  --color-amber-dim: rgba(245, 158, 11, 0.12);
+
+  /* Status colors */
+  --color-green:     #4ADE80;
+  --color-green-dim: rgba(74, 222, 128, 0.10);
+  --color-blue:      #60A5FA;
+  --color-blue-dim:  rgba(96, 165, 250, 0.10);
+  --color-red:       #F87171;
+  --color-red-dim:   rgba(248, 113, 113, 0.12);
+  --color-orange:    #FB923C;
+  --color-orange-dim:rgba(251, 146, 60, 0.12);
+  --color-purple:    #C084FC;
+  --color-purple-dim:rgba(192, 132, 252, 0.12);
+  --color-yellow:    #FDE047;
+  --color-yellow-dim:rgba(253, 224, 71, 0.12);
+
+  /* Radii */
+  --radius:    10px;
+  --radius-sm: 6px;
+  --radius-xs: 4px;
+}
+
+/* ── Base ───────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+body {
+  background-color: var(--color-app);
+  color: var(--color-text);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-surface-3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-border-2); }
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 2px;
+}
+
+/* Textarea */
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* ── Utility Classes ─────────────────────────────────────────── */
+@layer utilities {
+  .font-syne  { font-family: var(--font-syne),    system-ui, sans-serif; }
+  .font-mono  { font-family: var(--font-dm-mono), monospace; }
+  .font-sans  { font-family: var(--font-dm-sans), system-ui, sans-serif; }
+
+  .bg-app       { background-color: var(--color-app); }
+  .bg-surface   { background-color: var(--color-surface); }
+  .bg-surface-2 { background-color: var(--color-surface-2); }
+  .bg-surface-3 { background-color: var(--color-surface-3); }
+
+  .text-default { color: var(--color-text); }
+  .text-muted   { color: var(--color-muted); }
+  .text-dim     { color: var(--color-dim); }
+  .text-amber   { color: var(--color-amber); }
+
+  .border-default { border-color: var(--color-border); }
+  .border-strong  { border-color: var(--color-border-2); }
+
+  /* Status pill variants */
+  .pill-approved { @apply bg-green-500/10 text-green-400 font-semibold text-xs px-2.5 py-0.5 rounded-full; }
+  .pill-pending  { @apply bg-amber-500/10 text-amber-400 font-semibold text-xs px-2.5 py-0.5 rounded-full; }
+  .pill-hold     { @apply bg-orange-500/10 text-orange-400 font-semibold text-xs px-2.5 py-0.5 rounded-full; }
+  .pill-denied   { @apply bg-red-500/10 text-red-400 font-semibold text-xs px-2.5 py-0.5 rounded-full; }
+  .pill-bod      { @apply bg-purple-500/10 text-purple-400 font-semibold text-xs px-2.5 py-0.5 rounded-full; }
+  .pill-legal    { @apply bg-orange-500/10 text-orange-400 font-semibold text-xs px-2.5 py-0.5 rounded-full; }
+  .pill-pending-doc { @apply bg-amber-500/20 text-amber-300 font-bold text-xs px-2.5 py-0.5 rounded-full border border-amber-500/30; }
+
+  /* State badges */
+  .state-tx { @apply bg-blue-500/15 text-blue-400 font-bold text-[10px] px-1.5 py-0.5 rounded font-mono; }
+  .state-fl { @apply bg-green-500/15 text-green-400 font-bold text-[10px] px-1.5 py-0.5 rounded font-mono; }
+  .state-oh { @apply bg-purple-500/15 text-purple-400 font-bold text-[10px] px-1.5 py-0.5 rounded font-mono; }
+
+  /* Input base */
+  .input-base {
+    @apply bg-surface-2 border border-default rounded-md px-3 py-2 text-sm text-default
+           placeholder:text-dim outline-none transition-colors w-full
+           focus:border-amber-500/50;
+  }
+
+  /* Card base */
+  .card {
+    @apply bg-surface border border-default rounded-[10px];
+  }
+
+  /* Section header */
+  .section-title {
+    @apply font-syne font-bold text-xs uppercase tracking-widest text-dim;
+  }
+}
+
+/* ── Animations ─────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-amber {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+  50%       { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+}
+
+.animate-fade-in  { animation: fadeIn  0.2s ease forwards; }
+.animate-slide-in { animation: slideIn 0.2s ease forwards; }
+.animate-pulse-amber { animation: pulse-amber 2s infinite; }
+
+/* Staggered children */
+.stagger > * { animation: fadeIn 0.2s ease forwards; opacity: 0; }
+.stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger > *:nth-child(2) { animation-delay: 0.10s; }
+.stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger > *:nth-child(4) { animation-delay: 0.20s; }
+.stagger > *:nth-child(5) { animation-delay: 0.25s; }
