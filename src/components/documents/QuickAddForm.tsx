@@ -4,16 +4,18 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import type { DocumentType, Campus } from '@/types'
-import { Upload, X, FileText, CheckCircle2 } from 'lucide-react'
+import { Upload, X, FileText, CheckCircle2, Sparkles, Loader2 } from 'lucide-react'
 import { clsx } from 'clsx'
 
-interface FileUpload {
-  label: string
-  key: 'caf' | 'budget' | 'document'
-  accept: string
-  description: string
-  url: string | null
-  uploading: boolean
+interface ExtractedData {
+  campus_name?: string
+  state?: string
+  document_type_name?: string
+  amount?: number
+  description?: string
+  vendor_name?: string
+  funding_source?: string
+  requester_name?: string
 }
 
 export function QuickAddForm({
@@ -27,7 +29,23 @@ export function QuickAddForm({
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Form fields — minimal info
+  // Upload mode
+  const [uploadMode, setUploadMode] = useState<'single' | 'separate'>('single')
+
+  // Single file
+  const [singleFileUrl, setSingleFileUrl] = useState<string | null>(null)
+  const [singleFileName, setSingleFileName] = useState<string | null>(null)
+  const [uploadingSingle, setUploadingSingle] = useState(false)
+  const [extracting, setExtracting] = useState(false)
+  const [extracted, setExtracted] = useState(false)
+
+  // Separate files
+  const [cafUrl, setCafUrl] = useState<string | null>(null)
+  const [budgetUrl, setBudgetUrl] = useState<string | null>(null)
+  const [docUrl, setDocUrl] = useState<string | null>(null)
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null)
+
+  // Form fields
   const [campusName, setCampusName] = useState('')
   const [state, setState] = useState('TX')
   const [docTypeId, setDocTypeId] = useState('')
@@ -35,37 +53,91 @@ export function QuickAddForm({
   const [description, setDescription] = useState('')
   const [pipelineStatus, setPipelineStatus] = useState('pending_fc_review')
   const [notes, setNotes] = useState('')
+  const [vendorName, setVendorName] = useState('')
+  const [fundingSource, setFundingSource] = useState('')
+  const [requesterName, setRequesterName] = useState('')
 
-  // File uploads
-  const [files, setFiles] = useState<FileUpload[]>([
-    { label: 'CAF Form (PDF)', key: 'caf', accept: '.pdf', description: 'Completed & signed CAF', url: null, uploading: false },
-    { label: 'Budget Sheet', key: 'budget', accept: '.pdf,.xls,.xlsx', description: 'From IDEA Master Report', url: null, uploading: false },
-    { label: 'Contract / Document', key: 'document', accept: '.pdf,.doc,.docx,.xls,.xlsx', description: 'The actual contract or document', url: null, uploading: false },
-  ])
+  // Upload a file to Supabase storage
+  async function uploadFile(file: File): Promise<string> {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const path = `uploads/${user?.id}/${Date.now()}_${file.name}`
+    const { error: uploadError } = await supabase.storage.from('documents').upload(path, file)
+    if (uploadError) throw uploadError
+    const { data } = supabase.storage.from('documents').getPublicUrl(path)
+    return data.publicUrl
+  }
 
-  async function handleUpload(key: string, e: React.ChangeEvent<HTMLInputElement>) {
+  // Single file upload + AI extraction
+  async function handleSingleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
 
-    setFiles(prev => prev.map(f => f.key === key ? { ...f, uploading: true } : f))
+    setUploadingSingle(true)
+    setError(null)
 
     try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      const path = `uploads/${user?.id}/${Date.now()}_${file.name}`
-      const { error: uploadError } = await supabase.storage.from('documents').upload(path, file)
-      if (uploadError) throw uploadError
-      const { data } = supabase.storage.from('documents').getPublicUrl(path)
+      // Upload file
+      const url = await uploadFile(file)
+      setSingleFileUrl(url)
+      setSingleFileName(file.name)
+      setUploadingSingle(false)
 
-      setFiles(prev => prev.map(f => f.key === key ? { ...f, url: data.publicUrl, uploading: false } : f))
+      // Try AI extraction
+      setExtracting(true)
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const res = await fetch('/api/extract-document', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (res.ok) {
+        const data: ExtractedData = await res.json()
+        // Pre-fill form fields
+        if (data.campus_name) setCampusName(data.campus_name)
+        if (data.state) setState(data.state)
+        if (data.amount) setAmount(String(data.amount))
+        if (data.description) setDescription(data.description)
+        if (data.vendor_name) setVendorName(data.vendor_name)
+        if (data.funding_source) setFundingSource(data.funding_source)
+        if (data.requester_name) setRequesterName(data.requester_name)
+
+        // Try to match doc type
+        if (data.document_type_name) {
+          const match = documentTypes.find(t =>
+            t.name.toLowerCase().includes(data.document_type_name!.toLowerCase()) ||
+            data.document_type_name!.toLowerCase().includes(t.name.toLowerCase())
+          )
+          if (match) setDocTypeId(match.id)
+        }
+
+        setExtracted(true)
+      }
     } catch (err) {
-      setError(`Failed to upload ${key} file. Please try again.`)
-      setFiles(prev => prev.map(f => f.key === key ? { ...f, uploading: false } : f))
+      setError('File upload failed. Please try again.')
+    } finally {
+      setUploadingSingle(false)
+      setExtracting(false)
     }
   }
 
-  function clearFile(key: string) {
-    setFiles(prev => prev.map(f => f.key === key ? { ...f, url: null } : f))
+  // Separate file upload
+  async function handleSeparateUpload(key: string, e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingKey(key)
+    try {
+      const url = await uploadFile(file)
+      if (key === 'caf') setCafUrl(url)
+      else if (key === 'budget') setBudgetUrl(url)
+      else setDocUrl(url)
+    } catch (err) {
+      setError(`Failed to upload file. Please try again.`)
+    } finally {
+      setUploadingKey(null)
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -78,20 +150,14 @@ export function QuickAddForm({
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
+      const { data: profile } = await supabase.from('users').select('org_id').eq('id', user?.id).single()
 
-      // Get user's org_id
-      const { data: profile } = await supabase
-        .from('users')
-        .select('org_id')
-        .eq('id', user?.id)
-        .single()
-
-      // Find doc type name
       const selectedType = documentTypes.find(t => t.id === docTypeId)
 
-      const cafFile = files.find(f => f.key === 'caf')
-      const budgetFile = files.find(f => f.key === 'budget')
-      const docFile = files.find(f => f.key === 'document')
+      // Determine file URLs based on mode
+      const fileUrl = uploadMode === 'single' ? singleFileUrl : (docUrl ?? singleFileUrl)
+      const cafPdfUrl = uploadMode === 'single' ? singleFileUrl : (cafUrl ?? null)
+      const budgetSheetUrl = uploadMode === 'single' ? null : (budgetUrl ?? null)
 
       const { data: doc, error: insertError } = await supabase
         .from('documents')
@@ -105,17 +171,19 @@ export function QuickAddForm({
           description: description || null,
           notes: notes || null,
           pipeline_status: pipelineStatus,
-          file_status: docFile?.url ? 'received' : 'pending_doc',
-          file_url: docFile?.url ?? null,
-          caf_pdf_url: cafFile?.url ?? null,
-          budget_sheet_url: budgetFile?.url ?? null,
+          file_status: fileUrl ? 'received' : 'pending_doc',
+          file_url: fileUrl,
+          caf_pdf_url: cafPdfUrl,
+          budget_sheet_url: budgetSheetUrl,
+          vendor_name: vendorName || null,
+          funding_source: fundingSource || null,
+          presenter_name: requesterName || null,
           created_by: user?.id,
         })
         .select()
         .single()
 
       if (insertError) throw insertError
-
       router.push(`/documents/${doc.id}?submitted=1`)
     } catch (err: any) {
       setError(err.message ?? 'Failed to add document. Please try again.')
@@ -124,69 +192,162 @@ export function QuickAddForm({
     }
   }
 
-  const uploadedCount = files.filter(f => f.url).length
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
 
-      {/* File uploads — the main focus */}
+      {/* Upload mode toggle */}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setUploadMode('single')}
+          className={clsx(
+            'flex items-center gap-2 px-3 py-2 rounded-md text-xs font-semibold transition-all',
+            uploadMode === 'single'
+              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+              : 'bg-white text-gray-500 border border-gray-200 hover:text-gray-700'
+          )}
+        >
+          <FileText size={13} /> Single File (All-in-One)
+        </button>
+        <button
+          type="button"
+          onClick={() => setUploadMode('separate')}
+          className={clsx(
+            'flex items-center gap-2 px-3 py-2 rounded-md text-xs font-semibold transition-all',
+            uploadMode === 'separate'
+              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+              : 'bg-white text-gray-500 border border-gray-200 hover:text-gray-700'
+          )}
+        >
+          <Upload size={13} /> Separate Files (CAF + Budget + Doc)
+        </button>
+      </div>
+
+      {/* Single file upload */}
+      {uploadMode === 'single' && (
+        <div className="card p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <FileText size={16} className="text-blue-600" />
+            <h3 className="font-semibold text-sm text-gray-900">Upload Document Package</h3>
+          </div>
+          <p className="text-xs text-gray-500">
+            Upload your complete PDF (CAF + contract combined). The app will extract the document info automatically.
+          </p>
+
+          {singleFileUrl ? (
+            <div className="flex items-center gap-3 p-4 rounded-md bg-green-50 border border-green-200">
+              <CheckCircle2 size={18} className="text-green-600 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-green-800 truncate">{singleFileName}</div>
+                {extracted && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Sparkles size={11} className="text-blue-500" />
+                    <span className="text-[11px] text-blue-600 font-medium">Info extracted — review below</span>
+                  </div>
+                )}
+                {extracting && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Loader2 size={11} className="text-blue-500 animate-spin" />
+                    <span className="text-[11px] text-blue-500">Extracting document info...</span>
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => { setSingleFileUrl(null); setSingleFileName(null); setExtracted(false) }}
+                className="text-gray-400 hover:text-red-500"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          ) : (
+            <div className="relative">
+              <input
+                type="file"
+                onChange={handleSingleUpload}
+                disabled={uploadingSingle}
+                className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                accept=".pdf"
+              />
+              <div className={clsx(
+                'flex flex-col items-center justify-center gap-2 p-8 rounded-lg border-2 border-dashed transition-colors',
+                uploadingSingle ? 'border-blue-300 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+              )}>
+                <Upload size={28} className="text-gray-300" />
+                <div className="text-sm font-medium text-gray-500">
+                  {uploadingSingle ? 'Uploading...' : 'Drop your PDF here or click to browse'}
+                </div>
+                <div className="text-[11px] text-gray-400">
+                  Signed CAF with contract — we'll extract the details
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Separate file uploads */}
+      {uploadMode === 'separate' && (
+        <div className="card p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Upload size={16} className="text-blue-600" />
+            <h3 className="font-semibold text-sm text-gray-900">Upload Files</h3>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { key: 'caf', label: 'CAF Form (PDF)', desc: 'Completed & signed CAF', accept: '.pdf', url: cafUrl, setUrl: setCafUrl },
+              { key: 'budget', label: 'Budget Sheet', desc: 'From IDEA Master Report', accept: '.pdf,.xls,.xlsx', url: budgetUrl, setUrl: setBudgetUrl },
+              { key: 'document', label: 'Contract / Document', desc: 'The actual contract', accept: '.pdf,.doc,.docx', url: docUrl, setUrl: setDocUrl },
+            ].map(file => (
+              <div key={file.key} className="space-y-1.5">
+                <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                  {file.label}
+                </label>
+                {file.url ? (
+                  <div className="flex items-center gap-2 p-3 rounded-md bg-green-50 border border-green-200 min-h-[80px]">
+                    <CheckCircle2 size={16} className="text-green-600 flex-shrink-0" />
+                    <span className="text-xs text-green-700 flex-1">Uploaded</span>
+                    <button type="button" onClick={() => file.setUrl(null)} className="text-gray-400 hover:text-red-500">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <input
+                      type="file"
+                      onChange={e => handleSeparateUpload(file.key, e)}
+                      disabled={uploadingKey === file.key}
+                      className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                      accept={file.accept}
+                    />
+                    <div className={clsx(
+                      'flex flex-col items-center justify-center gap-1.5 p-4 rounded-md border-2 border-dashed transition-colors min-h-[80px]',
+                      uploadingKey === file.key ? 'border-blue-300 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                    )}>
+                      <FileText size={18} className="text-gray-300" />
+                      <div className="text-[11px] text-gray-400 text-center">
+                        {uploadingKey === file.key ? 'Uploading...' : file.desc}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Document info */}
       <div className="card p-5 space-y-4">
-        <div className="flex items-center gap-2 mb-1">
-          <Upload size={16} className="text-blue-600" />
-          <h3 className="font-semibold text-sm text-gray-900">Upload Files</h3>
-          {uploadedCount > 0 && (
-            <span className="text-[10px] font-bold bg-green-50 text-green-700 px-2 py-0.5 rounded-full">
-              {uploadedCount} of 3 uploaded
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-sm text-gray-900">Document Info</h3>
+          {extracted && (
+            <span className="flex items-center gap-1 text-[11px] text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full">
+              <Sparkles size={10} /> Auto-filled from PDF
             </span>
           )}
         </div>
-
-        <div className="grid grid-cols-3 gap-3">
-          {files.map(file => (
-            <div key={file.key} className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                {file.label}
-              </label>
-              {file.url ? (
-                <div className="flex items-center gap-2 p-3 rounded-md bg-green-50 border border-green-200 min-h-[80px]">
-                  <CheckCircle2 size={16} className="text-green-600 flex-shrink-0" />
-                  <span className="text-xs text-green-700 flex-1">Uploaded</span>
-                  <button
-                    type="button"
-                    onClick={() => clearFile(file.key)}
-                    className="text-gray-400 hover:text-red-500"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ) : (
-                <div className="relative">
-                  <input
-                    type="file"
-                    onChange={e => handleUpload(file.key, e)}
-                    disabled={file.uploading}
-                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                    accept={file.accept}
-                  />
-                  <div className={clsx(
-                    'flex flex-col items-center justify-center gap-1.5 p-4 rounded-md border-2 border-dashed transition-colors min-h-[80px]',
-                    file.uploading ? 'border-blue-300 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
-                  )}>
-                    <FileText size={18} className="text-gray-300" />
-                    <div className="text-[11px] text-gray-400 text-center">
-                      {file.uploading ? 'Uploading...' : file.description}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Minimal document info */}
-      <div className="card p-5 space-y-4">
-        <h3 className="font-semibold text-sm text-gray-900">Document Info</h3>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
@@ -196,7 +357,7 @@ export function QuickAddForm({
             <input
               type="text"
               className="input-base"
-              placeholder="e.g. IDEA Henry Ph 2"
+              placeholder="e.g. IDEA Pharr Ph 3"
               list="campuses-quick"
               value={campusName}
               onChange={e => setCampusName(e.target.value)}
@@ -207,9 +368,7 @@ export function QuickAddForm({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-              State / Region
-            </label>
+            <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">State / Region</label>
             <select className="input-base" value={state} onChange={e => setState(e.target.value)}>
               <option value="TX">TX</option>
               <option value="FL">FL (IPS)</option>
@@ -222,9 +381,7 @@ export function QuickAddForm({
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-              Document Type
-            </label>
+            <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Document Type</label>
             <select className="input-base" value={docTypeId} onChange={e => setDocTypeId(e.target.value)}>
               <option value="">— Select —</option>
               {documentTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -232,24 +389,30 @@ export function QuickAddForm({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-              Amount ($)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              className="input-base"
-              placeholder="0.00"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-            />
+            <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Amount ($)</label>
+            <input type="number" step="0.01" className="input-base" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Vendor Name</label>
+            <input type="text" className="input-base" placeholder="Vendor or contractor" value={vendorName} onChange={e => setVendorName(e.target.value)} />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Requester</label>
+            <input type="text" className="input-base" placeholder="Who requested this" value={requesterName} onChange={e => setRequesterName(e.target.value)} />
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-            Pipeline Status
-          </label>
+          <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Funding Source</label>
+          <input type="text" className="input-base" placeholder="e.g. 2025 Bond, Cash per JA" value={fundingSource} onChange={e => setFundingSource(e.target.value)} />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Pipeline Status</label>
           <select className="input-base" value={pipelineStatus} onChange={e => setPipelineStatus(e.target.value)}>
             <option value="pending_fc_review">Pending FC Review</option>
             <option value="pending_coo">Pending COO</option>
@@ -263,57 +426,29 @@ export function QuickAddForm({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-            Description
-          </label>
-          <textarea
-            className="input-base min-h-[60px]"
-            rows={2}
-            placeholder="Brief description (optional)..."
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-          />
+          <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Description</label>
+          <textarea className="input-base min-h-[60px]" rows={2} placeholder="Brief description..." value={description} onChange={e => setDescription(e.target.value)} />
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-            Notes
-          </label>
-          <textarea
-            className="input-base min-h-[40px]"
-            rows={1}
-            placeholder="Internal notes (optional)..."
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-          />
+          <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Notes</label>
+          <textarea className="input-base min-h-[40px]" rows={1} placeholder="Internal notes..." value={notes} onChange={e => setNotes(e.target.value)} />
         </div>
       </div>
 
-      {/* Error */}
       {error && (
-        <div className="p-3 rounded-md bg-red-50 border border-red-200 text-sm text-red-600">
-          {error}
-        </div>
+        <div className="p-3 rounded-md bg-red-50 border border-red-200 text-sm text-red-600">{error}</div>
       )}
 
-      {/* Actions */}
       <div className="flex items-center justify-between pt-2">
         <div className="text-[11px] text-gray-400">
-          {uploadedCount} file{uploadedCount !== 1 ? 's' : ''} attached
+          {(singleFileUrl || cafUrl || docUrl) ? 'File attached' : 'No file yet'}
         </div>
         <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-md transition-colors"
-          >
+          <button type="button" onClick={() => router.back()} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-md transition-colors">
             Cancel
           </button>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="px-5 py-2 text-sm font-bold bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-          >
+          <button type="submit" disabled={submitting} className="px-5 py-2 text-sm font-bold bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50">
             {submitting ? 'Adding...' : 'Add to Tracker'}
           </button>
         </div>
