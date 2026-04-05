@@ -83,9 +83,9 @@ export function AllDocumentsClient({
       <div className="card p-3 space-y-3">
         {/* Search */}
         <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-dim" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           <input
-            className="input-base pl-8 text-sm"
+            className="input-base pl-9 text-sm"
             placeholder="Search campus, doc type, presenter, ticket number, vendor…"
             value={search}
             onChange={e => setSearch(e.target.value)}
