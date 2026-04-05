@@ -143,18 +143,18 @@ function Sidebar({
 
       {/* Logo */}
       <div className="px-4 pt-5 pb-4 border-b border-default">
-        <div className="font-syne font-black text-[13px] tracking-widest uppercase text-amber-400 leading-none">
-          Hope Built
+        <div className="font-syne font-black text-[13px] tracking-widest uppercase text-blue-800 leading-none">
+          IDEA F&C
         </div>
         <div className="text-[10px] text-dim mt-0.5 tracking-wide">
-          Advisory · Client Portal
+          Facilities & Construction
         </div>
       </div>
 
       {/* Client pill */}
-      <div className="mx-3 mt-3 px-3 py-2 bg-surface-3 rounded-lg border border-default flex items-center gap-2">
-        <div className="w-1.5 h-1.5 rounded-full bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.8)] flex-shrink-0" />
-        <span className="text-[11px] text-muted truncate">{org?.name ?? 'No Organization'}</span>
+      <div className="mx-3 mt-3 px-3 py-2 bg-blue-50 rounded-lg border border-blue-100 flex items-center gap-2">
+        <div className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
+        <span className="text-[11px] text-gray-600 truncate">{org?.name ?? 'No Organization'}</span>
       </div>
 
       {/* Quick action */}
@@ -162,8 +162,8 @@ function Sidebar({
         <Link
           href="/documents/new"
           className="flex items-center justify-center gap-2 w-full py-2 rounded-md
-                     bg-amber-500/10 border border-amber-500/30 text-amber-400
-                     text-xs font-semibold hover:bg-amber-500/20 transition-colors"
+                     bg-blue-600 text-white
+                     text-xs font-semibold hover:bg-blue-700 transition-colors"
         >
           <Plus size={13} /> Submit Document
         </Link>
@@ -189,13 +189,13 @@ function Sidebar({
                   className={clsx(
                     'flex items-center gap-2.5 px-2.5 py-[7px] rounded-md text-[12.5px] font-medium transition-all group',
                     isActive
-                      ? 'bg-amber-500/10 text-amber-400 border border-amber-500/25'
-                      : 'text-muted hover:bg-surface-2 hover:text-default border border-transparent'
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-transparent'
                   )}
                 >
                   <span className={clsx(
                     'flex-shrink-0 transition-colors',
-                    isActive ? 'text-amber-400' : 'text-dim group-hover:text-muted'
+                    isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-500'
                   )}>
                     {item.icon}
                   </span>
@@ -204,8 +204,8 @@ function Sidebar({
                     <span className={clsx(
                       'flex-shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full font-mono',
                       item.color === 'amber'
-                        ? 'bg-amber-500/20 text-amber-400'
-                        : 'bg-red-500/80 text-white'
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-red-500 text-white'
                     )}>
                       {item.badge}
                     </span>
@@ -285,7 +285,7 @@ function Topbar({
         </div>
 
         {/* Avatar */}
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-[11px] font-bold text-black flex-shrink-0 cursor-pointer">
+        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0 cursor-pointer">
           {user.avatar_initials ?? user.full_name.slice(0, 2).toUpperCase()}
         </div>
       </div>

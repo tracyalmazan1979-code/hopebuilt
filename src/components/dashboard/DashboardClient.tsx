@@ -23,11 +23,11 @@ function MetricCard({
   href?:  string
 }) {
   const accentMap = {
-    red:    'before:bg-red-400',
-    amber:  'before:bg-amber-400',
-    blue:   'before:bg-blue-400',
-    green:  'before:bg-green-400',
-    purple: 'before:bg-purple-400',
+    red:    'before:bg-red-500',
+    amber:  'before:bg-amber-500',
+    blue:   'before:bg-blue-600',
+    green:  'before:bg-green-500',
+    purple: 'before:bg-purple-500',
   }
 
   const content = (
@@ -61,9 +61,9 @@ function DocCard({ doc }: { doc: ActivePipelineItem }) {
     : 'normal'
 
   const borderMap = {
-    overdue: 'border-l-red-400',
-    warning: 'border-l-amber-400',
-    normal:  'border-l-blue-400',
+    overdue: 'border-l-red-500',
+    warning: 'border-l-amber-500',
+    normal:  'border-l-blue-500',
   }
 
   const stateColors: Record<string, string> = {
@@ -95,7 +95,7 @@ function DocCard({ doc }: { doc: ActivePipelineItem }) {
           </span>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {doc.submitter_type === 'pmsi' && (
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400">PMSI</span>
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">PMSI</span>
             )}
             <span className={stateClass}>{doc.state}</span>
           </div>
@@ -109,7 +109,7 @@ function DocCard({ doc }: { doc: ActivePipelineItem }) {
         {/* Bottom row */}
         <div className="flex items-center justify-between">
           {amount && (
-            <span className="font-mono text-[11px] font-semibold text-amber-400">{amount}</span>
+            <span className="font-mono text-[11px] font-semibold text-green-700">{amount}</span>
           )}
           <div className="flex items-center gap-1 ml-auto">
             {isPendingDoc && (
@@ -123,7 +123,7 @@ function DocCard({ doc }: { doc: ActivePipelineItem }) {
               </span>
             )}
             {urgency === 'warning' && (
-              <span className="text-[10px] text-amber-400 flex items-center gap-0.5">
+              <span className="text-[10px] text-amber-600 flex items-center gap-0.5">
                 <Clock size={10} /> {daysInStage}d
               </span>
             )}
@@ -136,7 +136,7 @@ function DocCard({ doc }: { doc: ActivePipelineItem }) {
             <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full', {
               'bg-red-500/10 text-red-400':    doc.current_pending_stage === 'fc_committee',
               'bg-blue-500/10 text-blue-400':  doc.current_pending_stage === 'coo',
-              'bg-amber-500/10 text-amber-400':doc.current_pending_stage === 'treasury_finance',
+              'bg-amber-50 text-amber-700':doc.current_pending_stage === 'treasury_finance',
               'bg-orange-500/10 text-orange-400': doc.current_pending_stage === 'legal',
               'bg-purple-500/10 text-purple-400': doc.current_pending_stage === 'board',
             })}>
@@ -167,16 +167,16 @@ function Swimlane({
   addHref?:  string
 }) {
   const accentColors = {
-    red:   'text-red-400',
-    amber: 'text-amber-400',
-    blue:  'text-blue-400',
-    green: 'text-green-400',
+    red:   'text-red-600',
+    amber: 'text-amber-600',
+    blue:  'text-blue-600',
+    green: 'text-green-600',
   }
   const badgeColors = {
-    red:   'bg-red-500/10 text-red-400',
-    amber: 'bg-amber-500/10 text-amber-400',
-    blue:  'bg-blue-500/10 text-blue-400',
-    green: 'bg-green-500/10 text-green-400',
+    red:   'bg-red-50 text-red-700',
+    amber: 'bg-amber-50 text-amber-700',
+    blue:  'bg-blue-50 text-blue-700',
+    green: 'bg-green-50 text-green-700',
   }
 
   return (
@@ -204,7 +204,7 @@ function Swimlane({
         {addHref && (
           <Link
             href={addHref}
-            className="flex items-center justify-center gap-1.5 p-2 border border-dashed border-default rounded-md text-[11px] text-dim hover:text-amber-400 hover:border-amber-500/40 transition-colors"
+            className="flex items-center justify-center gap-1.5 p-2 border border-dashed border-gray-300 rounded-md text-[11px] text-gray-400 hover:text-blue-600 hover:border-blue-300 transition-colors"
           >
             <Plus size={12} /> Add document
           </Link>
@@ -249,14 +249,14 @@ export function DashboardClient({
 
       {/* Wednesday prompt */}
       {isWednesday && (
-        <div className="flex items-center justify-between px-4 py-3 rounded-lg bg-amber-500/8 border border-amber-500/20">
+        <div className="flex items-center justify-between px-4 py-3 rounded-lg bg-blue-50 border border-blue-200">
           <div className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse-amber" />
-            <span className="text-sm font-semibold text-amber-400">It's Wednesday — FAC meeting today at 2:30 PM CST</span>
+            <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse-amber" />
+            <span className="text-sm font-semibold text-blue-800">It's Wednesday — FAC meeting today at 2:30 PM CST</span>
           </div>
           <Link
             href="/meetings/fac/live"
-            className="flex items-center gap-1.5 text-xs font-bold text-black bg-amber-400 px-3 py-1.5 rounded-md hover:bg-amber-300 transition-colors"
+            className="flex items-center gap-1.5 text-xs font-bold text-white bg-blue-600 px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors"
           >
             Enter Meeting Mode <ChevronRight size={13} />
           </Link>
@@ -265,14 +265,14 @@ export function DashboardClient({
 
       {/* Pending doc alert */}
       {metrics.overdue_submissions > 0 && (
-        <div className="flex items-center justify-between px-4 py-3 rounded-lg bg-orange-500/8 border border-orange-500/20">
+        <div className="flex items-center justify-between px-4 py-3 rounded-lg bg-orange-50 border border-orange-200">
           <div className="flex items-center gap-3">
-            <FileWarning size={16} className="text-orange-400" />
-            <span className="text-sm text-orange-400">
+            <FileWarning size={16} className="text-orange-600" />
+            <span className="text-sm text-orange-700">
               <strong>{metrics.overdue_submissions} document{metrics.overdue_submissions > 1 ? 's' : ''}</strong> on tracker with no file received — past Tuesday 3 PM deadline
             </span>
           </div>
-          <Link href="/pending" className="text-xs font-bold text-orange-400 hover:underline">
+          <Link href="/pending" className="text-xs font-bold text-orange-600 hover:underline">
             View all →
           </Link>
         </div>
@@ -322,7 +322,7 @@ export function DashboardClient({
           <h2 className="font-syne font-bold text-sm text-default">Approval Pipeline</h2>
           <Link
             href="/documents/new"
-            className="flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300"
+            className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800"
           >
             <Plus size={13} /> Submit Document
           </Link>

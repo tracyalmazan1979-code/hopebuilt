@@ -14,19 +14,21 @@ const config: Config = {
         syne:  ['var(--font-syne)',    'system-ui', 'sans-serif'],
       },
       colors: {
-        app:       '#0D1117',
+        app:       '#F5F7FA',
         surface: {
-          DEFAULT: '#161B22',
-          2:       '#1C2230',
-          3:       '#21293A',
+          DEFAULT: '#FFFFFF',
+          2:       '#F0F2F5',
+          3:       '#E8ECF0',
         },
         border: {
-          DEFAULT: 'rgba(255,255,255,0.07)',
-          strong:  'rgba(255,255,255,0.12)',
+          DEFAULT: 'rgba(0,0,0,0.08)',
+          strong:  'rgba(0,0,0,0.15)',
         },
         brand: {
-          amber:  '#F59E0B',
-          teal:   '#22D3EE',
+          DEFAULT: '#003DA5',
+          light:   '#1A5BC4',
+          amber:   '#C8971D',
+          gold:    '#E5B84B',
         },
       },
       borderRadius: {

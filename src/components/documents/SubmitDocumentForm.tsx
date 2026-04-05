@@ -105,7 +105,7 @@ function Field({ label, required, error, children }: {
   return (
     <div className="space-y-1.5">
       <label className="text-[11px] font-semibold text-muted uppercase tracking-wider">
-        {label} {required && <span className="text-amber-400">*</span>}
+        {label} {required && <span className="text-blue-600">*</span>}
       </label>
       {children}
       {error && <p className="text-[11px] text-red-400">{error}</p>}
@@ -167,7 +167,7 @@ function PMSIPersonnelSelector({
             className={clsx(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors',
               selected.includes(person.email)
-                ? 'bg-amber-500/15 border-amber-500/40 text-amber-400'
+                ? 'bg-blue-50 border-blue-300 text-blue-600'
                 : 'bg-surface-2 border-default text-muted hover:text-default hover:border-strong'
             )}
           >
@@ -200,8 +200,8 @@ function AutoFlags({
   if (active.length === 0) return null
 
   return (
-    <div className="rounded-lg border border-amber-500/30 bg-amber-500/8 p-3 space-y-2">
-      <div className="flex items-center gap-2 text-[11px] font-bold text-amber-400 uppercase tracking-wider">
+    <div className="rounded-lg border border-blue-200 bg-amber-50 p-3 space-y-2">
+      <div className="flex items-center gap-2 text-[11px] font-bold text-blue-600 uppercase tracking-wider">
         <AlertTriangle size={13} /> Auto-detected flags
       </div>
       {active.map(flag => (
@@ -210,7 +210,7 @@ function AutoFlags({
             'bg-purple-500/15 text-purple-400': flag.color === 'purple',
             'bg-orange-500/15 text-orange-400': flag.color === 'orange',
             'bg-red-500/15 text-red-400':       flag.color === 'red',
-            'bg-amber-500/15 text-amber-400':   flag.color === 'amber',
+            'bg-amber-50 text-amber-700':   flag.color === 'amber',
           })}>
             {flag.label}
           </span>
@@ -241,9 +241,9 @@ function TypedSignatureField({
   return (
     <div className="space-y-3">
       <label className="text-[11px] font-semibold text-muted uppercase tracking-wider">
-        Submitter Signature <span className="text-amber-400">*</span>
+        Submitter Signature <span className="text-blue-600">*</span>
       </label>
-      <div className="card p-4 space-y-3 border-amber-500/20">
+      <div className="card p-4 space-y-3 border-blue-200">
         <div className="grid grid-cols-3 gap-3">
           <div className="space-y-1">
             <label className="text-[10px] font-semibold text-dim uppercase">Full Name</label>
@@ -443,7 +443,7 @@ export function SubmitDocumentForm({
             className={clsx(
               'flex-1 py-2.5 transition-colors capitalize',
               section === s
-                ? 'bg-amber-500/15 text-amber-400 border-b-2 border-amber-400'
+                ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600'
                 : 'text-muted hover:text-default'
             )}
           >
@@ -554,7 +554,7 @@ export function SubmitDocumentForm({
               {FUNDING_SOURCES.map(s => <option key={s} value={s} />)}
             </datalist>
             <p className="text-[10px] text-dim mt-1">
-              Combined with Funding Request on CAF as: <span className="text-amber-400/70">Source (Request Type)</span> — e.g. &quot;2025 Bond (Amount available within Project Budget)&quot;
+              Combined with Funding Request on CAF as: <span className="text-blue-600/70">Source (Request Type)</span> — e.g. &quot;2025 Bond (Amount available within Project Budget)&quot;
             </p>
           </Field>
 
@@ -593,7 +593,7 @@ export function SubmitDocumentForm({
                 />
                 <div className={clsx(
                   'flex flex-col items-center justify-center gap-2 p-6 rounded-md border-2 border-dashed transition-colors',
-                  uploading ? 'border-amber-500/40 bg-amber-500/5' : 'border-default hover:border-amber-500/40 hover:bg-surface-2'
+                  uploading ? 'border-blue-300 bg-blue-50' : 'border-default hover:border-blue-300 hover:bg-surface-2'
                 )}>
                   <Upload size={20} className="text-dim" />
                   <div className="text-center">
@@ -614,7 +614,7 @@ export function SubmitDocumentForm({
                   readOnly
                   className="rounded"
                 />
-                <label htmlFor="pending-doc" className="text-[11px] text-amber-400 font-semibold">
+                <label htmlFor="pending-doc" className="text-[11px] text-blue-600 font-semibold">
                   Submit as PENDING DOC — document file will follow
                 </label>
               </div>
@@ -648,7 +648,7 @@ export function SubmitDocumentForm({
                 />
                 <div className={clsx(
                   'flex flex-col items-center justify-center gap-2 p-4 rounded-md border-2 border-dashed transition-colors',
-                  uploadingBudget ? 'border-amber-500/40 bg-amber-500/5' : 'border-default hover:border-amber-500/40 hover:bg-surface-2'
+                  uploadingBudget ? 'border-blue-300 bg-blue-50' : 'border-default hover:border-blue-300 hover:bg-surface-2'
                 )}>
                   <Upload size={16} className="text-dim" />
                   <div className="text-center">
@@ -856,7 +856,7 @@ export function SubmitDocumentForm({
               onChange={setSignatureData}
             />
             {!signatureData.name.trim() && (
-              <p className="text-[11px] text-amber-400 mt-1">
+              <p className="text-[11px] text-blue-600 mt-1">
                 Signature is required before submitting
               </p>
             )}
@@ -888,7 +888,7 @@ export function SubmitDocumentForm({
           <button
             type="submit"
             disabled={submitting}
-            className="px-5 py-2 text-sm font-bold bg-amber-500 text-black rounded-md hover:bg-amber-400 transition-colors disabled:opacity-50"
+            className="px-5 py-2 text-sm font-bold bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
             {submitting ? 'Submitting…' : 'Submit Document →'}
           </button>

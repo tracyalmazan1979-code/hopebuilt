@@ -58,10 +58,10 @@ function LoginForm() {
       <div className="w-full max-w-[380px]">
 
         <div className="text-center mb-10">
-          <div className="font-syne font-black text-2xl tracking-widest uppercase text-amber-400 mb-1">
-            Hope Built
+          <div className="font-syne font-black text-2xl tracking-widest uppercase text-blue-800 mb-1">
+            IDEA F&C
           </div>
-          <div className="text-sm text-muted">F&C Command Center</div>
+          <div className="text-sm text-gray-500">Facilities & Construction</div>
         </div>
 
         <div className="card p-8">
@@ -93,8 +93,8 @@ function LoginForm() {
                   onClick={() => setMode('magic')}
                   className={`flex-1 py-2 transition-colors ${
                     mode === 'magic'
-                      ? 'bg-amber-500/15 text-amber-400 border-r border-amber-500/30'
-                      : 'text-muted hover:text-default border-r border-default'
+                      ? 'bg-blue-50 text-blue-700 border-r border-blue-200'
+                      : 'text-gray-500 hover:text-gray-700 border-r border-gray-200'
                   }`}
                 >
                   Magic Link
@@ -104,8 +104,8 @@ function LoginForm() {
                   onClick={() => setMode('password')}
                   className={`flex-1 py-2 transition-colors ${
                     mode === 'password'
-                      ? 'bg-amber-500/15 text-amber-400'
-                      : 'text-muted hover:text-default'
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
                   Password
@@ -142,7 +142,7 @@ function LoginForm() {
               )}
 
               {error && (
-                <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-md px-3 py-2">
+                <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                   {error}
                 </div>
               )}
@@ -150,8 +150,8 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading || !email}
-                className="w-full py-2.5 rounded-md bg-amber-500 text-black font-bold text-sm
-                           hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-2.5 rounded-md bg-blue-600 text-white font-bold text-sm
+                           hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading
                   ? 'Signing in…'
@@ -169,7 +169,7 @@ function LoginForm() {
         </div>
 
         <p className="text-center text-[10px] text-dim mt-6">
-          Hope Built Advisory · F&C Command Center · v0.1
+          IDEA Public Schools · Facilities & Construction · v0.1
         </p>
       </div>
     </div>
