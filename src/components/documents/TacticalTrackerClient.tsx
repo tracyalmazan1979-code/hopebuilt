@@ -3,9 +3,9 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
-import { Search, Download } from 'lucide-react'
+import { Search, Download, Plus } from 'lucide-react'
 import { clsx } from 'clsx'
-import { updateTacticalItem } from '@/lib/data'
+import { updateTacticalItem, createTacticalItem } from '@/lib/data'
 
 // 12 columns matching Vanessa's F&C Weekly Tactical Doc tracker
 type ColDef = {
@@ -38,13 +38,50 @@ const IPS_STATES = ['FL', 'OH', 'IPS_FL']
 type Section = { label: 'TX' | 'IPS'; items: any[] }
 type MeetingGroup = { meetingId: string; meetingDate: string; meetingTitle: string; sections: Section[] }
 
-export function TacticalTrackerClient({ items }: { items: any[] }) {
+export function TacticalTrackerClient({
+  items, meetings, orgId,
+}: {
+  items: any[]
+  meetings: any[]
+  orgId: string
+}) {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [orgTab, setOrgTab] = useState<OrgTab>('all')
   const [rows, setRows] = useState(items)
+  const [adding, setAdding] = useState<string | null>(null)  // key: `${meetingId}:${section}`
 
   useEffect(() => { setRows(items) }, [items])
+
+  async function addRow(meetingId: string, section: 'TX' | 'IPS') {
+    const key = `${meetingId}:${section}`
+    setAdding(key)
+    try {
+      // Determine next agenda number for this meeting+section
+      const existing = rows.filter(r => {
+        if (r.meeting_id !== meetingId) return false
+        const isTx = r.state === 'TX' || r.state === 'TX_IPS'
+        return section === 'TX' ? isTx : !isTx
+      })
+      const nextAgenda = Math.max(0, ...existing.map(r => r.agenda_number ?? 0)) + 1
+      const defaultState = section === 'TX' ? 'TX' : 'FL'
+      const newItem = await createTacticalItem({
+        meeting_id: meetingId,
+        org_id: orgId,
+        state: defaultState,
+        agenda_number: nextAgenda,
+        campus_name: '',
+      })
+      // Attach meeting data locally so the row renders under the right group
+      const meeting = meetings.find(m => m.id === meetingId)
+      setRows(prev => [{ ...newItem, meetings: meeting }, ...prev])
+    } catch (e) {
+      console.error('Failed to add row', e)
+      alert('Failed to add item')
+    } finally {
+      setAdding(null)
+    }
+  }
 
   const filtered = useMemo(() => {
     return rows.filter(i => {
@@ -186,6 +223,7 @@ export function TacticalTrackerClient({ items }: { items: any[] }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <AddToMeetingMenu meetings={meetings} onAdd={addRow} />
           <div className="relative">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             <input
@@ -227,6 +265,8 @@ export function TacticalTrackerClient({ items }: { items: any[] }) {
                 group={g}
                 orgTab={orgTab}
                 onSaveCell={saveCell}
+                onAddRow={addRow}
+                addingKey={adding}
               />
             ))}
             {groups.length === 0 && (
@@ -246,18 +286,19 @@ export function TacticalTrackerClient({ items }: { items: any[] }) {
 // ── Meeting block (header row + TX/IPS sections) ────────────
 
 function MeetingBlock({
-  group, orgTab, onSaveCell,
+  group, orgTab, onSaveCell, onAddRow, addingKey,
 }: {
   group: MeetingGroup
   orgTab: OrgTab
   onSaveCell: (id: string, key: string, v: any) => void
+  onAddRow: (meetingId: string, section: 'TX' | 'IPS') => void
+  addingKey: string | null
 }) {
   const meetingLabel = group.meetingDate
     ? format(new Date(group.meetingDate), 'EEEE, MMMM d, yyyy')
     : 'Unknown date'
 
   const sectionsToShow = group.sections.filter(s => {
-    if (s.items.length === 0) return false
     if (orgTab === 'idea_tx' && s.label !== 'TX') return false
     if (orgTab === 'ips' && s.label !== 'IPS') return false
     return true
@@ -280,7 +321,10 @@ function MeetingBlock({
         <SectionBlock
           key={section.label}
           section={section}
+          meetingId={group.meetingId}
           onSaveCell={onSaveCell}
+          onAddRow={onAddRow}
+          isAdding={addingKey === `${group.meetingId}:${section.label}`}
         />
       ))}
     </>
@@ -288,10 +332,13 @@ function MeetingBlock({
 }
 
 function SectionBlock({
-  section, onSaveCell,
+  section, meetingId, onSaveCell, onAddRow, isAdding,
 }: {
   section: Section
+  meetingId: string
   onSaveCell: (id: string, key: string, v: any) => void
+  onAddRow: (meetingId: string, section: 'TX' | 'IPS') => void
+  isAdding: boolean
 }) {
   return (
     <>
@@ -320,7 +367,90 @@ function SectionBlock({
           ))}
         </tr>
       ))}
+      {/* Add row button */}
+      <tr>
+        <td colSpan={COLUMNS.length} className="border-b border-default px-2 py-1 bg-app">
+          <button
+            onClick={() => onAddRow(meetingId, section.label)}
+            disabled={isAdding}
+            className="flex items-center gap-1.5 text-[10px] font-semibold text-dim hover:text-blue-400 transition-colors disabled:opacity-50"
+          >
+            <Plus size={11} /> {isAdding ? 'Adding…' : `Add ${section.label} item`}
+          </button>
+        </td>
+      </tr>
     </>
+  )
+}
+
+// ── Add-to-meeting dropdown ─────────────────────────────────
+
+function AddToMeetingMenu({
+  meetings, onAdd,
+}: {
+  meetings: any[]
+  onAdd: (meetingId: string, section: 'TX' | 'IPS') => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [meetingId, setMeetingId] = useState(meetings[0]?.id ?? '')
+  const [section, setSection] = useState<'TX' | 'IPS'>('TX')
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold bg-amber-500 text-black rounded-md hover:bg-amber-400 transition-colors"
+      >
+        <Plus size={12} /> Add Item
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-1 z-40 w-[320px] card p-3 space-y-2 shadow-lg">
+            <div className="text-[10px] font-bold text-dim uppercase tracking-wider">Add to meeting</div>
+            <select
+              value={meetingId}
+              onChange={e => setMeetingId(e.target.value)}
+              className="input-base text-xs w-full"
+            >
+              {meetings.map(m => (
+                <option key={m.id} value={m.id}>
+                  {m.meeting_date ? format(new Date(m.meeting_date), 'MMM d, yyyy') : ''} — {m.title ?? m.meeting_type}
+                </option>
+              ))}
+            </select>
+            <div className="flex gap-2">
+              {(['TX','IPS'] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setSection(s)}
+                  className={clsx(
+                    'flex-1 px-3 py-1.5 rounded-md text-[11px] font-semibold border transition-colors',
+                    section === s
+                      ? s === 'TX'
+                        ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                        : 'bg-purple-500/15 border-purple-500/30 text-purple-400'
+                      : 'border-default text-muted hover:text-default'
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <button
+              disabled={!meetingId}
+              onClick={() => {
+                onAdd(meetingId, section)
+                setOpen(false)
+              }}
+              className="w-full px-3 py-1.5 text-[11px] font-bold bg-amber-500 text-black rounded-md hover:bg-amber-400 transition-colors disabled:opacity-50"
+            >
+              Add {section} item
+            </button>
+          </div>
+        </>
+      )}
+    </div>
   )
 }
 

@@ -9,7 +9,7 @@ export default async function TacticalTrackerPage() {
   const { data: { user: authUser } } = await supabase.auth.getUser()
   if (!authUser) redirect('/auth/login')
 
-  const [userResult, itemsResult, metricsResult] = await Promise.all([
+  const [userResult, itemsResult, meetingsResult, metricsResult] = await Promise.all([
     supabase.from('users').select('*, organizations(*)').eq('id', authUser.id).single(),
     supabase.from('tactical_items')
       .select(`
@@ -18,6 +18,11 @@ export default async function TacticalTrackerPage() {
       `)
       .order('created_at', { ascending: false })
       .limit(1000),
+    supabase.from('meetings')
+      .select('id, meeting_date, meeting_type, title, state')
+      .in('meeting_type', ['tactical', 'fac_doc_rev'])
+      .order('meeting_date', { ascending: false })
+      .limit(50),
     supabase.from('v_dashboard_metrics').select('*').single(),
   ])
 
@@ -30,7 +35,11 @@ export default async function TacticalTrackerPage() {
       metrics={metricsResult.data}
       title="F&C Weekly Tactical Tracker"
     >
-      <TacticalTrackerClient items={itemsResult.data ?? []} />
+      <TacticalTrackerClient
+        items={itemsResult.data ?? []}
+        meetings={meetingsResult.data ?? []}
+        orgId={userResult.data.org_id}
+      />
     </AppShell>
   )
 }
