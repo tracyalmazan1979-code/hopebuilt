@@ -8,7 +8,7 @@ import { PageHeader, SectionCard } from '@/components/ui'
 const COMMITTEE_MEMBERS = [
   {
     name:  'Layne Fisher',
-    title: 'VP of Treasury / CFO',
+    title: 'Chief Operating Officer',
     org:   'IDEA Public Schools TX',
     role:  'Approver · F&C Committee Member',
     initials: 'LF',
@@ -16,7 +16,7 @@ const COMMITTEE_MEMBERS = [
   },
   {
     name:  'Daniel Garza',
-    title: 'Chief Operating Officer',
+    title: 'VP of Facilities & Construction',
     org:   'IDEA Public Schools TX',
     role:  'Approver · F&C Committee Member',
     initials: 'DG',
@@ -32,7 +32,7 @@ const COMMITTEE_MEMBERS = [
   },
   {
     name:  'Andrew Stanton',
-    title: 'Principal / Project Manager',
+    title: 'Principal',
     org:   'PMSI',
     role:  'Approver · F&C Committee Member',
     initials: 'AS',
@@ -40,7 +40,7 @@ const COMMITTEE_MEMBERS = [
   },
   {
     name:  'Vanessa Rangel',
-    title: 'F&C Coordinator',
+    title: 'Construction Project Manager',
     org:   'IDEA Public Schools TX',
     role:  'Coordinator · Meeting Secretary',
     initials: 'VR',

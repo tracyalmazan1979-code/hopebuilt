@@ -18,6 +18,7 @@ const schema = z.object({
   state:              z.enum(['TX','FL','OH','IPS_FL','TX_IPS']),
   campus_name:        z.string().min(1, 'Campus is required'),
   document_type_id:   z.string().min(1, 'Document type is required'),
+  document_type_other: z.string().optional(),
   description:        z.string().min(10, 'Description must be at least 10 characters'),
   submitter_type:     z.enum(['pmsi','idea_internal']),
 
@@ -36,12 +37,21 @@ const schema = z.object({
   is_coop_member:     z.boolean().optional(),
   coop_name:          z.string().optional(),
   vendor_is_former_employee: z.boolean().optional(),
+  vendor_last_day_employment: z.string().optional(),
   students_on_campus: z.boolean().optional(),
   service_start_date: z.string().optional(),
   service_end_date:   z.string().optional(),
   date_needed_by:     z.string().optional(),
   is_urgent:          z.boolean().default(false),
   urgent_reason:      z.string().optional(),
+
+  // COI
+  coi_attached:            z.boolean().optional(),
+  coi_status_notes:        z.string().optional(),
+
+  // Board approval (Section I of CAF)
+  board_approval_required: z.boolean().optional(),
+  board_approval_date:     z.string().optional(),
 
   // File
   file_status:        z.enum(['pending_doc','received','not_required']).default('pending_doc'),
@@ -53,8 +63,7 @@ type FormValues = z.infer<typeof schema>
 
 const FUNDING_REQUESTS = [
   'New Request',
-  'Amount available within project budget',
-  'Amount available within approved project budget',
+  'Amount available within Project Budget',
   'Money coming back to IDEA',
   'Emergency',
   'New Request / Emergency',
@@ -124,6 +133,7 @@ function Textarea({ ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement
 
 const PMSI_PERSONNEL = [
   { name: 'Andrew Stanton', email: 'andrew@pmsi.com' },
+  { name: 'Tracy Almazan', email: 'talmazan@pmsitx.com' },
   { name: 'Stephanie (PMSI)', email: 'stephanie@pmsi.com' },
   { name: 'Bob (PMSI)', email: 'bob@pmsi.com' },
 ]
@@ -226,10 +236,14 @@ export function SubmitDocumentForm({
   const [pmsiCCEmails,   setPmsiCCEmails]   = useState<string[]>([])
   const [pmsiCCNames,    setPmsiCCNames]     = useState<string[]>([])
   const [fileUrl,        setFileUrl]         = useState<string | null>(null)
+  const [budgetFileUrl,  setBudgetFileUrl]   = useState<string | null>(null)
   const [uploading,      setUploading]       = useState(false)
+  const [uploadingBudget, setUploadingBudget] = useState(false)
   const [submitting,     setSubmitting]      = useState(false)
   const [error,          setError]           = useState<string | null>(null)
   const [section,        setSection]         = useState<'basic'|'caf'|'urgency'>('basic')
+  const [isOtherType,    setIsOtherType]     = useState(false)
+  const [isCoop,         setIsCoop]          = useState(false)
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -249,7 +263,7 @@ export function SubmitDocumentForm({
   const watchedSubmitter = watch('submitter_type')
 
   // Find selected doc type
-  const selectedType = documentTypes.find(t => t.id === watchedTypeId)
+  const selectedType = watchedTypeId === 'other' ? null : documentTypes.find(t => t.id === watchedTypeId)
 
   // Auto-flags
   const flags = {
@@ -280,15 +294,38 @@ export function SubmitDocumentForm({
     }
   }
 
+  // Budget sheet upload
+  async function handleBudgetUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingBudget(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      const path = `uploads/${user?.id}/${Date.now()}_budget_${file.name}`
+      const { error } = await supabase.storage.from('documents').upload(path, file)
+      if (error) throw error
+      const { data } = supabase.storage.from('documents').getPublicUrl(path)
+      setBudgetFileUrl(data.publicUrl)
+    } catch (err) {
+      setError('Budget sheet upload failed. Please try again.')
+    } finally {
+      setUploadingBudget(false)
+    }
+  }
+
   async function onSubmit(values: FormValues) {
     setSubmitting(true)
     setError(null)
     try {
       const doc = await submitDocument({
         ...values,
+        document_type_id:   values.document_type_id === 'other' ? undefined : values.document_type_id,
+        document_type_name: values.document_type_id === 'other' ? values.document_type_other : undefined,
         campus_id:    campuses.find(c => c.name === values.campus_name)?.id,
         file_status:  fileUrl ? 'received' : 'pending_doc',
         file_url:     fileUrl ?? undefined,
+        budget_sheet_url: budgetFileUrl ?? undefined,
         pmsi_personnel_emails: pmsiCCEmails,
         pmsi_personnel_names:  pmsiCCNames,
       } as any)
@@ -379,13 +416,27 @@ export function SubmitDocumentForm({
           </div>
 
           <Field label="Document Type" required error={errors.document_type_id?.message}>
-            <Select {...register('document_type_id')}>
+            <select
+              className="input-base appearance-none cursor-pointer"
+              {...register('document_type_id', {
+                onChange: (e: React.ChangeEvent<HTMLSelectElement>) => setIsOtherType(e.target.value === 'other'),
+              })}
+            >
               <option value="">— Select document type —</option>
               {documentTypes.map(t => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
-            </Select>
+              <option value="other">Other (type in below)</option>
+            </select>
           </Field>
+          {isOtherType && (
+            <Field label="Other Document Type" required>
+              <Input
+                placeholder="Enter document type name…"
+                {...register('document_type_other')}
+              />
+            </Field>
+          )}
 
           <Field label="Description of Services" required error={errors.description?.message}>
             <Textarea
@@ -421,6 +472,9 @@ export function SubmitDocumentForm({
             <datalist id="funding-sources">
               {FUNDING_SOURCES.map(s => <option key={s} value={s} />)}
             </datalist>
+            <p className="text-[10px] text-dim mt-1">
+              Combined with Funding Request on CAF as: <span className="text-amber-400/70">Source (Request Type)</span> — e.g. &quot;2025 Bond (Amount available within Project Budget)&quot;
+            </p>
           </Field>
 
           <Field label="Submitter Notes (internal)">
@@ -486,6 +540,47 @@ export function SubmitDocumentForm({
             )}
           </div>
 
+          {/* Budget sheet upload */}
+          <div className="space-y-2">
+            <label className="text-[11px] font-semibold text-muted uppercase tracking-wider">
+              Budget Sheet (from IDEA Master Report)
+            </label>
+            {budgetFileUrl ? (
+              <div className="flex items-center gap-2 p-3 rounded-md bg-green-500/10 border border-green-500/20">
+                <span className="text-xs text-green-400 flex-1 truncate">✓ Budget sheet uploaded</span>
+                <button
+                  type="button"
+                  onClick={() => setBudgetFileUrl(null)}
+                  className="text-dim hover:text-red-400"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <div className="relative">
+                <input
+                  type="file"
+                  onChange={handleBudgetUpload}
+                  disabled={uploadingBudget}
+                  className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                  accept=".pdf,.xls,.xlsx"
+                />
+                <div className={clsx(
+                  'flex flex-col items-center justify-center gap-2 p-4 rounded-md border-2 border-dashed transition-colors',
+                  uploadingBudget ? 'border-amber-500/40 bg-amber-500/5' : 'border-default hover:border-amber-500/40 hover:bg-surface-2'
+                )}>
+                  <Upload size={16} className="text-dim" />
+                  <div className="text-center">
+                    <div className="text-xs font-semibold text-muted">
+                      {uploadingBudget ? 'Uploading…' : 'Attach budget sheet PDF'}
+                    </div>
+                    <div className="text-[10px] text-dim mt-0.5">PDF from IDEA Master Report (print to PDF)</div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* PMSI personnel */}
           {watchedSubmitter === 'pmsi' && (
             <PMSIPersonnelSelector
@@ -525,27 +620,70 @@ export function SubmitDocumentForm({
           </Field>
 
           <div className="grid grid-cols-2 gap-4">
-            <Field label="CO-OP Member?">
-              <Select {...register('is_coop_member', { setValueAs: v => v === 'true' ? true : v === 'false' ? false : undefined })}>
+            <Field label="COI (Certificate of Insurance) Attached?">
+              <select
+                className="input-base appearance-none cursor-pointer"
+                {...register('coi_attached', {
+                  setValueAs: v => v === 'true' ? true : v === 'false' ? false : undefined,
+                })}
+              >
                 <option value="">— Select —</option>
                 <option value="true">Yes</option>
                 <option value="false">No</option>
-              </Select>
+              </select>
             </Field>
-            {watchedCoop && (
-              <Field label="Which CO-OP?">
+            {watch('coi_attached') === false && (
+              <Field label="COI Status Notes" required>
+                <Input
+                  placeholder="e.g. Requested from vendor, expected by…"
+                  {...register('coi_status_notes')}
+                />
+              </Field>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="CO-OP Member?">
+              <select
+                className="input-base appearance-none cursor-pointer"
+                {...register('is_coop_member', {
+                  setValueAs: v => v === 'true' ? true : v === 'false' ? false : undefined,
+                  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => setIsCoop(e.target.value === 'true'),
+                })}
+              >
+                <option value="">— Select —</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </Field>
+            {isCoop && (
+              <Field label="If YES, which one?">
                 <Input placeholder="BuyBoard, TIPS, Region 19…" {...register('coop_name')} />
               </Field>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Vendor Former IDEA Employee?">
-              <Select {...register('vendor_is_former_employee', { setValueAs: v => v === 'true' })}>
-                <option value="false">No</option>
+            <Field label="Vendor is a Former Employee?">
+              <select
+                className="input-base appearance-none cursor-pointer"
+                {...register('vendor_is_former_employee', {
+                  setValueAs: v => v === 'true' ? true : v === 'false' ? false : undefined,
+                })}
+              >
+                <option value="">— Select —</option>
                 <option value="true">Yes</option>
-              </Select>
+                <option value="false">No</option>
+              </select>
             </Field>
+            {watch('vendor_is_former_employee') === true && (
+              <Field label="Last Day of Employment">
+                <Input type="date" {...register('vendor_last_day_employment')} />
+              </Field>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <Field label="Students On Campus During Service?">
               <Select {...register('students_on_campus', { setValueAs: v => v === 'true' ? true : v === 'false' ? false : undefined })}>
                 <option value="">— Select —</option>
@@ -562,6 +700,45 @@ export function SubmitDocumentForm({
             <Field label="Service End Date">
               <Input type="date" {...register('service_end_date')} />
             </Field>
+          </div>
+        </div>
+      )}
+
+      {/* Section I: Board Approval */}
+      {section === 'caf' && (
+        <div className="card p-4 space-y-3 mt-4">
+          <div className="font-syne font-bold text-xs uppercase tracking-wider text-muted">
+            Section I — Board Approval Required?
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Board Approval Required?">
+              <select
+                className="input-base appearance-none cursor-pointer"
+                {...register('board_approval_required', {
+                  setValueAs: v => v === 'true' ? true : v === 'false' ? false : undefined,
+                })}
+              >
+                <option value="">— Select —</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </Field>
+            {watch('board_approval_required') && (
+              <Field label="Date of Board Approval">
+                <Input type="date" {...register('board_approval_date')} />
+              </Field>
+            )}
+          </div>
+          <div className="text-[11px] text-muted">
+            <div className="font-semibold mb-1">Criteria:</div>
+            <ul className="list-disc list-inside space-y-0.5 text-dim">
+              <li>Above $250K & not part of a COOP</li>
+              <li>Contract funding not originally budgeted for</li>
+              <li>Multiyear contract</li>
+              <li>Real Estate contract / Rental of space outside our premises</li>
+              <li>Public works contracts above $50K (Facilities & Construction projects)</li>
+              <li>Capital assets (CapEx): cost + service/installation above $5K p/unit basis</li>
+            </ul>
           </div>
         </div>
       )}

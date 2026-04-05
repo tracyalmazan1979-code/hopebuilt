@@ -8,7 +8,7 @@ import type { User, Organization, DashboardMetrics } from '@/types'
 import {
   Zap, FileText, Calendar, Building2, Archive,
   PauseCircle, Users, BookOpen, LogOut, Plus,
-  BarChart3, Settings, ChevronRight,
+  BarChart3, Settings, ChevronRight, ClipboardList,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 
@@ -54,13 +54,18 @@ function buildNavItems(metrics?: DashboardMetrics | null): NavItem[] {
     {
       label: 'Tactical',
       href:  '/meetings/tactical',
-      icon:  <Calendar size={15} />,
+      icon:  <ClipboardList size={15} />,
     },
     {
       label: 'BOD Items',
       href:  '/bod',
       icon:  <BookOpen size={15} />,
       badge: metrics?.pending_bod || undefined,
+    },
+    {
+      label: 'Calendar',
+      href:  '/calendar',
+      icon:  <Calendar size={15} />,
     },
     // Status
     {

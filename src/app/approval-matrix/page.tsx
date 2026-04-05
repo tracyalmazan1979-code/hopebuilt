@@ -15,6 +15,32 @@ const STAGE_LABELS: Record<string, string> = {
 
 const ALL_STAGES = ['fc_committee','coo','treasury_finance','legal','finance_committee','board']
 
+// Board Authorized Signer info by document type name
+const BOARD_SIGNERS: Record<string, { tx: string[]; ips?: string[] }> = {
+  'Task Order':                          { tx: ['VP of Treasury'], ips: ['Chief Operating Officer'] },
+  'CEA — Contingency Expenditure Authorization': { tx: ['VP of Treasury'], ips: ['Chief Operating Officer'] },
+  'CO — Change Order':                  { tx: ['VP of Treasury'], ips: ['Chief Operating Officer'] },
+  'ASA — Additional Service Agreement': { tx: ['VP of Treasury'], ips: ['Chief Operating Officer'] },
+  'Contractor Ranking / Selection Criteria': { tx: ['VP of Treasury'], ips: ['Chief Operating Officer'] },
+  'Final Retainage Pay Application':     { tx: ['VP of Treasury'], ips: ['Chief Operating Officer'] },
+  'Monitoring Agreement':                { tx: ['VP of Treasury'], ips: ['Chief Operating Officer'] },
+  'Plat Application':                    { tx: ['VP of Treasury'], ips: ['Chief Operating Officer'] },
+  'A101 Construction Contract':          { tx: ['IDEA President', 'Chief Financial Officer'], ips: ['IDEA President', 'Chief Financial Officer'] },
+  'Contract Amendment':                  { tx: ['IDEA President', 'Chief Financial Officer'], ips: ['IDEA President', 'Chief Financial Officer'] },
+  'PSA — Purchase and Sale Agreement':   { tx: ['IDEA President', 'Chief Financial Officer'], ips: ['IDEA President', 'Chief Financial Officer'] },
+  'Easement':                            { tx: ['IDEA President', 'Chief Financial Officer'], ips: ['IDEA President', 'Chief Financial Officer'] },
+}
+
+// Additional FC committee documents not in the DB document_types table
+const ADDITIONAL_FC_DOCS = [
+  'Contractor Selection',
+  'Permission by Owner to Obtain Permits',
+  'Permit Affidavits',
+  'Third-Party Peer Review Agreements',
+  'Fiscal Surety',
+  'Zoning Applications',
+]
+
 export default async function ApprovalMatrixPage() {
   const supabase = createClient()
   const { data: { user: au } } = await supabase.auth.getUser()
@@ -49,6 +75,7 @@ export default async function ApprovalMatrixPage() {
                 ))}
                 <th className="px-3 py-3 text-center text-[10px] font-bold uppercase tracking-wider text-dim">BOD $</th>
                 <th className="px-3 py-3 text-center text-[10px] font-bold uppercase tracking-wider text-amber-400/70">Wet Sig</th>
+                <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-dim">Board Authorized Signer</th>
               </tr>
             </thead>
             <tbody>
@@ -89,29 +116,63 @@ export default async function ApprovalMatrixPage() {
                       : <span className="text-dim text-[10px]">—</span>
                     }
                   </td>
+                  <td className="px-4 py-3 text-[10px] text-muted">
+                    {BOARD_SIGNERS[dt.name] ? (
+                      <div className="space-y-1">
+                        <div>
+                          <span className="text-dim">TX & IPS:</span>{' '}
+                          {BOARD_SIGNERS[dt.name].tx.join(', ')}
+                        </div>
+                        {BOARD_SIGNERS[dt.name].ips && (
+                          <div>
+                            <span className="text-dim">IPS FL, LLC:</span>{' '}
+                            {BOARD_SIGNERS[dt.name].ips!.join(', ')}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-dim">—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
 
+        {/* Additional FC committee documents */}
+        <div className="card p-5">
+          <div className="font-syne font-bold text-xs uppercase tracking-wider text-muted mb-4">
+            Additional F&C Committee Documents
+          </div>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+            {ADDITIONAL_FC_DOCS.map((item, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm text-default">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Board approval criteria */}
         <div className="card p-5">
           <div className="font-syne font-bold text-xs uppercase tracking-wider text-muted mb-4">
-            Board Approval Criteria
+            Documents That Require Board Approval
           </div>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+          <div className="space-y-2">
             {[
-              'Any contract over $50K',
-              'Any change order over $50K',
-              'Any document changing contract language',
-              'Plat (mylar)',
-              'Easements that convey land',
-              'Final Retainage Pay Application',
+              { doc: 'Any contract over $50K', signer: 'TX & IPS: IDEA President, CFO | IPS FL, LLC: IDEA President, CFO' },
+              { doc: 'Any change order over $50K', signer: 'TX & IPS: IDEA President, CFO | IPS FL, LLC: IDEA President, CFO' },
+              { doc: 'Any document changing contract language', signer: 'TX & IPS: IDEA President, CFO | IPS FL, LLC: IDEA President, CFO' },
+              { doc: 'Plat (mylar)', signer: 'TX & IPS: IDEA President, CFO | IPS FL, LLC: IDEA President, CFO' },
+              { doc: 'Easements that convey land', signer: 'TX & IPS: IDEA President, CFO | IPS FL, LLC: IDEA President, CFO' },
+              { doc: 'Final Retainage Pay Application', signer: 'TX & IPS: IDEA President, CFO | IPS FL, LLC: IDEA President, CFO' },
             ].map((item, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm text-default">
+              <div key={i} className="flex items-center gap-3 text-sm">
                 <div className="w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0" />
-                {item}
+                <span className="text-default">{item.doc}</span>
+                <span className="text-[10px] text-dim ml-auto">{item.signer}</span>
               </div>
             ))}
           </div>
@@ -122,10 +183,14 @@ export default async function ApprovalMatrixPage() {
           <div className="font-syne font-bold text-xs uppercase tracking-wider text-muted mb-4">
             Documents That Do NOT Require F&C Committee
           </div>
+          <p className="text-[11px] text-dim mb-3">
+            Signed by: TX & IPS — VP of Facilities and Construction
+          </p>
           <div className="grid grid-cols-2 gap-x-8 gap-y-2">
             {[
               'Benches and trash can proposals',
-              'Permits/Applications (Elevator, Alarm, Fire, Gate, etc.)',
+              'Permits/Applications (Elevator, Alarm Systems, Burglary, Fire, Gate, Storage Tanks, Signage, Building, Site, Environmental, Playground, Utility Service, Gas, Fire Lane, Places of Assembly, Sprinkler Systems, Exit Signs, Fire Hydrant, Owner Designation, Dumpster, Health and Safety)',
+              'Certificates (Elevator Certificate)',
               'AEVR application',
               'SWPP application',
               'TDLR Owner Agent Designation',
@@ -133,10 +198,9 @@ export default async function ApprovalMatrixPage() {
               'Punch List Completion Acceptance Letter',
               'Notice of Intent',
               'Notice to Proceed',
-              'Elevator Certificate',
             ].map((item, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm text-muted">
-                <div className="w-1.5 h-1.5 rounded-full bg-dim flex-shrink-0" />
+              <div key={i} className="flex items-start gap-2 text-sm text-muted">
+                <div className="w-1.5 h-1.5 rounded-full bg-dim flex-shrink-0 mt-1.5" />
                 {item}
               </div>
             ))}
