@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -8,8 +8,7 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase'
 import { submitDocument } from '@/lib/data'
 import type { DocumentType, Campus, StateRegion } from '@/types'
-import { AlertTriangle, Upload, X, Plus, ChevronDown, Eraser } from 'lucide-react'
-import SignaturePad from 'signature_pad'
+import { AlertTriangle, Upload, X, Plus, ChevronDown } from 'lucide-react'
 import { clsx } from 'clsx'
 
 // ── Schema ────────────────────────────────────────────────────
@@ -222,70 +221,71 @@ function AutoFlags({
   )
 }
 
-// ── Signature Pad ─────────────────────────────────────────────
+// ── Typed Signature ───────────────────────────────────────────
 
-function SignatureField({
-  onSignatureChange,
+interface SignatureData {
+  name: string
+  title: string
+  date: string
+}
+
+function TypedSignatureField({
+  onChange,
+  value,
 }: {
-  onSignatureChange: (dataUrl: string | null) => void
+  onChange: (sig: SignatureData) => void
+  value: SignatureData
 }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const padRef = useRef<SignaturePad | null>(null)
-
-  useEffect(() => {
-    if (!canvasRef.current) return
-    const canvas = canvasRef.current
-    const ratio = Math.max(window.devicePixelRatio || 1, 1)
-    canvas.width = canvas.offsetWidth * ratio
-    canvas.height = canvas.offsetHeight * ratio
-    canvas.getContext('2d')?.scale(ratio, ratio)
-
-    padRef.current = new SignaturePad(canvas, {
-      backgroundColor: 'rgba(0, 0, 0, 0)',
-      penColor: 'rgb(0, 0, 0)',
-      minWidth: 1,
-      maxWidth: 2.5,
-    })
-
-    padRef.current.addEventListener('endStroke', () => {
-      if (padRef.current && !padRef.current.isEmpty()) {
-        onSignatureChange(padRef.current.toDataURL('image/png'))
-      }
-    })
-
-    return () => {
-      padRef.current?.off()
-    }
-  }, [onSignatureChange])
-
-  function clearSignature() {
-    padRef.current?.clear()
-    onSignatureChange(null)
-  }
+  const today = new Date().toISOString().split('T')[0]
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <label className="text-[11px] font-semibold text-muted uppercase tracking-wider">
         Submitter Signature <span className="text-amber-400">*</span>
       </label>
-      <div className="relative rounded-md border-2 border-default bg-white overflow-hidden">
-        <canvas
-          ref={canvasRef}
-          className="w-full cursor-crosshair"
-          style={{ height: '120px' }}
-        />
-        <div className="absolute bottom-2 left-3 right-3 border-t border-gray-300" />
-        <button
-          type="button"
-          onClick={clearSignature}
-          className="absolute top-2 right-2 p-1.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors"
-          title="Clear signature"
-        >
-          <Eraser size={14} />
-        </button>
+      <div className="card p-4 space-y-3 border-amber-500/20">
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1">
+            <label className="text-[10px] font-semibold text-dim uppercase">Full Name</label>
+            <input
+              type="text"
+              className="input-base"
+              placeholder="First Last"
+              value={value.name}
+              onChange={e => onChange({ ...value, name: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-semibold text-dim uppercase">Title</label>
+            <input
+              type="text"
+              className="input-base"
+              placeholder="Project Manager"
+              value={value.title}
+              onChange={e => onChange({ ...value, title: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-semibold text-dim uppercase">Date</label>
+            <input
+              type="date"
+              className="input-base"
+              value={value.date}
+              onChange={e => onChange({ ...value, date: e.target.value })}
+            />
+          </div>
+        </div>
+        {value.name && (
+          <div className="border-t border-default pt-3">
+            <div className="text-[10px] text-dim uppercase mb-1">Preview</div>
+            <div className="font-serif italic text-lg text-default">{value.name}</div>
+            <div className="text-[11px] text-muted">{value.title}</div>
+            <div className="text-[11px] text-muted">{value.date}</div>
+          </div>
+        )}
       </div>
       <p className="text-[10px] text-dim">
-        Sign above with your mouse or touchscreen. This signature will be embedded in the generated CAF PDF.
+        By typing your name, you are electronically signing this CAF submission.
       </p>
     </div>
   )
@@ -314,7 +314,9 @@ export function SubmitDocumentForm({
   const [section,        setSection]         = useState<'basic'|'caf'|'urgency'>('basic')
   const [isOtherType,    setIsOtherType]     = useState(false)
   const [isCoop,         setIsCoop]          = useState(false)
-  const [signatureData,  setSignatureData]   = useState<string | null>(null)
+  const [signatureData,  setSignatureData]   = useState<SignatureData>({
+    name: '', title: '', date: new Date().toISOString().split('T')[0],
+  })
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -386,8 +388,8 @@ export function SubmitDocumentForm({
   }
 
   async function onSubmit(values: FormValues) {
-    if (!signatureData) {
-      setError('Please sign the form before submitting.')
+    if (!signatureData.name.trim()) {
+      setError('Please type your name to sign the form before submitting.')
       setSection('urgency')
       return
     }
@@ -404,7 +406,9 @@ export function SubmitDocumentForm({
         budget_sheet_url: budgetFileUrl ?? undefined,
         pmsi_personnel_emails: pmsiCCEmails,
         pmsi_personnel_names:  pmsiCCNames,
-        submitter_signature:   signatureData,
+        submitter_signature_name:  signatureData.name,
+        submitter_signature_title: signatureData.title,
+        submitter_signature_date:  signatureData.date,
       } as any)
 
       // Fire submission email
@@ -847,10 +851,11 @@ export function SubmitDocumentForm({
 
           {/* Signature */}
           <div className="pt-4 border-t border-default">
-            <SignatureField
-              onSignatureChange={useCallback((data: string | null) => setSignatureData(data), [])}
+            <TypedSignatureField
+              value={signatureData}
+              onChange={setSignatureData}
             />
-            {!signatureData && (
+            {!signatureData.name.trim() && (
               <p className="text-[11px] text-amber-400 mt-1">
                 Signature is required before submitting
               </p>

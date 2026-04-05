@@ -258,34 +258,39 @@ async function buildCAFDocument(document: any): Promise<Uint8Array> {
     drawText('urgent_reason', data.urgent_reason)
   }
 
-  // Section III — Embed submitter signature if available
-  if (document.submitter_signature) {
-    try {
-      const sigBase64 = document.submitter_signature.replace(/^data:image\/png;base64,/, '')
-      const sigBytes = Uint8Array.from(atob(sigBase64), c => c.charCodeAt(0))
-      const sigImage = await pdfDoc.embedPng(sigBytes)
+  // Section III — Typed submitter signature
+  if (document.submitter_signature_name) {
+    const sigFont = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic)
 
-      // Scale to fit signature area (approx 150x40 px)
-      const sigDims = sigImage.scale(0.35)
-      page.drawImage(sigImage, {
+    // Signature name (italic, larger — like a formal signature)
+    page.drawText(document.submitter_signature_name, {
+      x: 100,
+      y: height - 740,
+      size: 14,
+      font: sigFont,
+      color: black,
+    })
+
+    // Title
+    if (document.submitter_signature_title) {
+      page.drawText(document.submitter_signature_title, {
         x: 100,
-        y: height - 750,  // submitter signature line area
-        width: Math.min(sigDims.width, 150),
-        height: Math.min(sigDims.height, 40),
+        y: height - 755,
+        size: 9,
+        font,
+        color: black,
       })
+    }
 
-      // Print name under signature
-      if (document.requester_name) {
-        page.drawText(document.requester_name, {
-          x: 100,
-          y: height - 765,
-          size: 8,
-          font,
-          color: black,
-        })
-      }
-    } catch (sigError) {
-      console.error('Failed to embed signature:', sigError)
+    // Date
+    if (document.submitter_signature_date) {
+      page.drawText(formatDate(document.submitter_signature_date), {
+        x: 100,
+        y: height - 768,
+        size: 9,
+        font,
+        color: black,
+      })
     }
   }
 
