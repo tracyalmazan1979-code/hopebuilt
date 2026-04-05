@@ -49,17 +49,41 @@ const COLUMNS: ColDef[] = [
   { key: 'additional_notes',        label: 'Notes (2)',               width: '180px', type: 'text',     editable: true },
 ]
 
+type OrgTab = 'all' | 'idea_tx' | 'ips'
+const IPS_STATES = ['FL', 'OH', 'IPS_FL']
+
 export function TrackerClient({ documents }: { documents: any[] }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
+  const [orgTab, setOrgTab] = useState<OrgTab>('all')
   const [stateFilter, setStateFilter] = useState<string>('all')
   const [rows, setRows] = useState(documents)
 
   // Keep rows in sync when server refreshes data
   useEffect(() => { setRows(documents) }, [documents])
 
+  // Derive state filter options based on org tab
+  const stateOptions = useMemo(() => {
+    if (orgTab === 'idea_tx') return ['all', 'TX']
+    if (orgTab === 'ips')     return ['all', 'FL', 'OH']
+    return ['all', 'TX', 'FL', 'OH']
+  }, [orgTab])
+
+  // Reset state filter if it becomes invalid after org tab change
+  useEffect(() => {
+    if (!stateOptions.includes(stateFilter)) setStateFilter('all')
+  }, [stateOptions, stateFilter])
+
+  const counts = useMemo(() => ({
+    all:     rows.length,
+    idea_tx: rows.filter(d => d.state === 'TX' || d.state === 'TX_IPS').length,
+    ips:     rows.filter(d => IPS_STATES.includes(d.state)).length,
+  }), [rows])
+
   const filtered = useMemo(() => {
     return rows.filter(d => {
+      if (orgTab === 'idea_tx' && d.state !== 'TX' && d.state !== 'TX_IPS') return false
+      if (orgTab === 'ips' && !IPS_STATES.includes(d.state)) return false
       if (stateFilter !== 'all' && d.state !== stateFilter) return false
       if (search) {
         const q = search.toLowerCase()
@@ -102,17 +126,50 @@ export function TrackerClient({ documents }: { documents: any[] }) {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `tracker-${format(new Date(), 'yyyy-MM-dd')}.csv`
+    const tag = orgTab === 'idea_tx' ? 'idea-tx' : orgTab === 'ips' ? 'ips' : 'all'
+    a.download = `tracker-${tag}-${format(new Date(), 'yyyy-MM-dd')}.csv`
     a.click()
     URL.revokeObjectURL(url)
   }
 
+  const tabTitle = orgTab === 'idea_tx' ? 'IDEA TX' : orgTab === 'ips' ? 'IPS (FL / OH)' : 'All'
+
   return (
     <div className="p-4 space-y-3 h-full flex flex-col min-h-0">
+      {/* Org tabs */}
+      <div className="flex items-center gap-1 border-b border-default">
+        {([
+          { v: 'idea_tx' as OrgTab, label: 'IDEA TX',       count: counts.idea_tx },
+          { v: 'ips' as OrgTab,     label: 'IPS (FL / OH)', count: counts.ips },
+          { v: 'all' as OrgTab,     label: 'All Orgs',      count: counts.all },
+        ]).map(t => (
+          <button
+            key={t.v}
+            onClick={() => setOrgTab(t.v)}
+            className={clsx(
+              'relative px-4 py-2 text-[12px] font-semibold transition-colors -mb-px border-b-2',
+              orgTab === t.v
+                ? 'text-blue-400 border-blue-500'
+                : 'text-muted border-transparent hover:text-default'
+            )}
+          >
+            {t.label}
+            <span className={clsx(
+              'ml-2 text-[10px] font-mono px-1.5 py-0.5 rounded-full',
+              orgTab === t.v ? 'bg-blue-500/15 text-blue-400' : 'bg-surface-2 text-dim'
+            )}>
+              {t.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
       {/* Header row */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="font-syne font-bold text-[17px] text-default">Weekly Doc Review Tracker</h2>
+          <h2 className="font-syne font-bold text-[17px] text-default">
+            {tabTitle} — Weekly Doc Review Tracker
+          </h2>
           <div className="text-[11px] text-muted mt-0.5">
             {filtered.length} of {rows.length} documents · Click any editable cell to update
           </div>
@@ -128,7 +185,7 @@ export function TrackerClient({ documents }: { documents: any[] }) {
             />
           </div>
           <div className="flex rounded-md overflow-hidden border border-default">
-            {['all','TX','FL','OH'].map(s => (
+            {stateOptions.map(s => (
               <button
                 key={s}
                 onClick={() => setStateFilter(s)}
