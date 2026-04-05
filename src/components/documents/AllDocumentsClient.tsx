@@ -168,7 +168,7 @@ export function AllDocumentsClient({
             <table className="w-full">
               <thead>
                 <tr className="bg-surface-2">
-                  {['Date','ST','Campus / Item','Type','Amount','Submitter','FC Outcome','Pipeline Status','File'].map(h => (
+                  {['FC Date','ST','Campus / Item','Type','Amount','Legal Ticket','FC Outcome','Sent Adobe','Approved','BOD','Pipeline','File'].map(h => (
                     <th key={h} className="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-dim whitespace-nowrap border-b border-default">
                       {h}
                     </th>
@@ -189,7 +189,7 @@ export function AllDocumentsClient({
                       onClick={() => window.location.href = `/documents/${doc.id}`}
                     >
                       <td className="px-3 py-2.5 font-mono text-[11px] text-muted whitespace-nowrap">
-                        {doc.created_at ? format(new Date(doc.created_at), 'MM/dd/yy') : '—'}
+                        {doc.fc_date ? format(new Date(doc.fc_date), 'MM/dd/yy') : doc.created_at ? format(new Date(doc.created_at), 'MM/dd/yy') : '—'}
                       </td>
                       <td className="px-3 py-2.5">
                         <StateBadge state={doc.state} />
@@ -204,15 +204,8 @@ export function AllDocumentsClient({
                       <td className="px-3 py-2.5 whitespace-nowrap">
                         <Amount value={doc.amount} />
                       </td>
-                      <td className="px-3 py-2.5">
-                        <span className={clsx(
-                          'text-[9px] font-bold px-1.5 py-0.5 rounded',
-                          doc.submitter_type === 'pmsi'
-                            ? 'bg-amber-500/15 text-amber-400'
-                            : 'bg-blue-500/15 text-blue-400'
-                        )}>
-                          {doc.submitter_type === 'pmsi' ? 'PMSI' : 'IDEA'}
-                        </span>
+                      <td className="px-3 py-2.5 font-mono text-[10px] text-muted whitespace-nowrap">
+                        {doc.legal_ticket_number ?? <span className="text-dim">—</span>}
                       </td>
                       <td className="px-3 py-2.5 text-[11px]">
                         {doc.fc_outcome ? (
@@ -224,6 +217,15 @@ export function AllDocumentsClient({
                             {doc.fc_outcome}
                           </span>
                         ) : <span className="text-dim">—</span>}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-[10px] text-muted whitespace-nowrap">
+                        {doc.date_sent_via_adobe ? format(new Date(doc.date_sent_via_adobe), 'MM/dd/yy') : <span className="text-dim">—</span>}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-[10px] text-muted whitespace-nowrap">
+                        {doc.date_approved_sent_out ? format(new Date(doc.date_approved_sent_out), 'MM/dd/yy') : <span className="text-dim">—</span>}
+                      </td>
+                      <td className="px-3 py-2.5 text-[10px] text-muted max-w-[100px]">
+                        <div className="truncate">{doc.bod_item_type ?? <span className="text-dim">—</span>}</div>
                       </td>
                       <td className="px-3 py-2.5">
                         <PipelineBadge status={doc.pipeline_status} />

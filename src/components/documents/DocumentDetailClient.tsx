@@ -16,6 +16,151 @@ import {
 } from 'lucide-react'
 import { clsx } from 'clsx'
 
+// ── Tracker Fields Card (Vanessa's post-meeting updates) ──────
+
+function TrackerFieldsCard({ doc, onSaved }: { doc: any; onSaved: () => void }) {
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [fcDate, setFcDate] = useState(doc.fc_date ?? '')
+  const [budgetAmendmentReqd, setBudgetAmendmentReqd] = useState(doc.budget_amendment_reqd ?? false)
+  const [bodItemType, setBodItemType] = useState(doc.bod_item_type ?? '')
+  const [dateSentViaAdobe, setDateSentViaAdobe] = useState(doc.date_sent_via_adobe ?? '')
+  const [dateApprovedSentOut, setDateApprovedSentOut] = useState(doc.date_approved_sent_out ?? '')
+  const [wetSignatureNotary, setWetSignatureNotary] = useState(doc.wet_signature_notary ?? '')
+  const [glAccount, setGlAccount] = useState(doc.gl_account ?? '')
+  const [glAccountFunded, setGlAccountFunded] = useState(doc.gl_account_funded ?? false)
+  const [notifiedRm, setNotifiedRm] = useState(doc.notified_rm ?? false)
+  const [additionalNotes, setAdditionalNotes] = useState(doc.additional_notes ?? '')
+
+  async function save() {
+    setSaving(true)
+    await updateDocument(doc.id, {
+      fc_date: fcDate || null,
+      budget_amendment_reqd: budgetAmendmentReqd,
+      bod_item_type: bodItemType || null,
+      date_sent_via_adobe: dateSentViaAdobe || null,
+      date_approved_sent_out: dateApprovedSentOut || null,
+      wet_signature_notary: wetSignatureNotary || null,
+      gl_account: glAccount || null,
+      gl_account_funded: glAccountFunded,
+      notified_rm: notifiedRm,
+      additional_notes: additionalNotes || null,
+    } as any)
+    setSaving(false)
+    setEditing(false)
+    onSaved()
+  }
+
+  if (!editing) {
+    const rows: [string, React.ReactNode][] = [
+      ['FC Date', doc.fc_date ? format(new Date(doc.fc_date), 'MM/dd/yyyy') : null],
+      ['Budget Amendment Reqd', doc.budget_amendment_reqd ? 'Yes' : 'No'],
+      ['BOD Item Type', doc.bod_item_type],
+      ['Date Sent via Adobe', doc.date_sent_via_adobe ? format(new Date(doc.date_sent_via_adobe), 'MM/dd/yyyy') : null],
+      ['Date Approved/Sent Out', doc.date_approved_sent_out ? format(new Date(doc.date_approved_sent_out), 'MM/dd/yyyy') : null],
+      ['WET Signature/Notary', doc.wet_signature_notary],
+      ['GL Account', doc.gl_account],
+      ['GL Account Funded', doc.gl_account_funded ? 'Yes' : 'No'],
+      ['Notified RM', doc.notified_rm ? 'Yes' : 'No'],
+    ]
+    return (
+      <SectionCard
+        title="Tracker Updates"
+        action={
+          <button onClick={() => setEditing(true)} className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800">
+            <Edit2 size={11} /> Edit
+          </button>
+        }
+      >
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-3">
+          {rows.map(([label, value]) => (
+            <div key={label as string}>
+              <dt className="text-[10px] font-semibold text-dim uppercase tracking-wider mb-0.5">{label}</dt>
+              <dd className="text-[13px] text-default">{value || <span className="text-dim">—</span>}</dd>
+            </div>
+          ))}
+        </dl>
+        {doc.additional_notes && (
+          <div className="mt-4 pt-3 border-t border-default">
+            <div className="text-[10px] font-semibold text-dim uppercase tracking-wider mb-1">Additional Notes</div>
+            <p className="text-[13px] text-default whitespace-pre-wrap">{doc.additional_notes}</p>
+          </div>
+        )}
+      </SectionCard>
+    )
+  }
+
+  return (
+    <SectionCard title="Tracker Updates">
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-semibold text-muted uppercase tracking-wider">FC Date</label>
+            <input type="date" className="input-base" value={fcDate} onChange={e => setFcDate(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-semibold text-muted uppercase tracking-wider">BOD Item Type</label>
+            <input type="text" className="input-base" placeholder="Consent / Action / Ratification" value={bodItemType} onChange={e => setBodItemType(e.target.value)} />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-semibold text-muted uppercase tracking-wider">Date Sent via Adobe</label>
+            <input type="date" className="input-base" value={dateSentViaAdobe} onChange={e => setDateSentViaAdobe(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-semibold text-muted uppercase tracking-wider">Date Approved / Sent Out</label>
+            <input type="date" className="input-base" value={dateApprovedSentOut} onChange={e => setDateApprovedSentOut(e.target.value)} />
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-semibold text-muted uppercase tracking-wider">WET Signature / Notary</label>
+          <input type="text" className="input-base" placeholder="e.g. Notary required" value={wetSignatureNotary} onChange={e => setWetSignatureNotary(e.target.value)} />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-semibold text-muted uppercase tracking-wider">GL Account</label>
+            <input type="text" className="input-base" value={glAccount} onChange={e => setGlAccount(e.target.value)} />
+          </div>
+          <div className="flex items-end gap-4 pb-1">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={glAccountFunded} onChange={e => setGlAccountFunded(e.target.checked)} className="w-4 h-4" />
+              <span className="text-xs font-semibold text-default">GL Funded</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={budgetAmendmentReqd} onChange={e => setBudgetAmendmentReqd(e.target.checked)} className="w-4 h-4" />
+              <span className="text-xs font-semibold text-default">Budget Amend</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={notifiedRm} onChange={e => setNotifiedRm(e.target.checked)} className="w-4 h-4" />
+              <span className="text-xs font-semibold text-default">Notified RM</span>
+            </label>
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-semibold text-muted uppercase tracking-wider">Additional Notes</label>
+          <textarea className="input-base min-h-[60px]" rows={2} value={additionalNotes} onChange={e => setAdditionalNotes(e.target.value)} />
+        </div>
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={save}
+            disabled={saving}
+            className="px-4 py-2 text-xs font-bold bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+          >
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+          <button
+            onClick={() => setEditing(false)}
+            className="px-4 py-2 text-xs font-semibold text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </SectionCard>
+  )
+}
+
 // ── Approval Update Modal ─────────────────────────────────────
 
 function ApprovalModal({
@@ -279,15 +424,7 @@ export function DocumentDetailClient({
                 ['Students on Campus', doc.students_on_campus == null ? null : doc.students_on_campus ? 'Yes ⚠' : 'No'],
                 ['Service Dates',  doc.service_start_date ? `${format(new Date(doc.service_start_date), 'MM/dd/yy')} → ${doc.service_end_date ? format(new Date(doc.service_end_date), 'MM/dd/yy') : 'TBD'}` : null],
                 ['GL Account',     doc.gl_account],
-                ['GL Account Funded', doc.gl_account_funded == null ? null : doc.gl_account_funded ? 'Yes' : 'No'],
-                ['Notified RM',    doc.notified_rm ? 'Yes' : null],
                 ['Legal Ticket',   doc.legal_ticket_number],
-                ['FC Date',        doc.fc_date ? format(new Date(doc.fc_date), 'MM/dd/yyyy') : null],
-                ['Budget Amendment Reqd', doc.budget_amendment_reqd == null ? null : doc.budget_amendment_reqd ? 'Yes' : 'No'],
-                ['BOD Item Type',  doc.bod_item_type],
-                ['Date Sent via Adobe', doc.date_sent_via_adobe ? format(new Date(doc.date_sent_via_adobe), 'MM/dd/yyyy') : null],
-                ['Date Approved/Sent Out', doc.date_approved_sent_out ? format(new Date(doc.date_approved_sent_out), 'MM/dd/yyyy') : null],
-                ['WET Signature/Notary', doc.wet_signature_notary],
                 ['FAC Meeting',    doc.meetings?.title ?? doc.meetings?.meeting_date],
                 ['Submitted',      doc.submitted_at ? format(new Date(doc.submitted_at), 'MM/dd/yyyy') : null],
                 ['Date Needed By', doc.date_needed_by ? format(new Date(doc.date_needed_by), 'MM/dd/yyyy') : null],
@@ -299,6 +436,9 @@ export function DocumentDetailClient({
               ))}
             </dl>
           </SectionCard>
+
+          {/* Tracker Fields (Vanessa's post-meeting updates) */}
+          <TrackerFieldsCard doc={doc} onSaved={() => router.refresh()} />
 
           {/* Description */}
           {doc.description && (
