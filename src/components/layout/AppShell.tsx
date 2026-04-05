@@ -8,7 +8,7 @@ import type { User, Organization, DashboardMetrics } from '@/types'
 import {
   Zap, FileText, Calendar, Building2, Archive,
   PauseCircle, Users, BookOpen, LogOut, Plus,
-  BarChart3, Settings, ChevronRight, ClipboardList,
+  BarChart3, Settings, ChevronRight, ClipboardList, Table2,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 
@@ -38,6 +38,11 @@ function buildNavItems(metrics?: DashboardMetrics | null): NavItem[] {
       href:  '/documents',
       icon:  <FileText size={15} />,
       badge: metrics ? metrics.total_active : undefined,
+    },
+    {
+      label: 'Tracker (29-col)',
+      href:  '/tracker',
+      icon:  <Table2 size={15} />,
     },
     {
       label: 'Leadership View',
