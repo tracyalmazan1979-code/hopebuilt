@@ -1,17 +1,8 @@
-// ============================================================
-// ALL PAGE SERVER COMPONENTS
-// Each page: fetches data server-side, renders AppShell + client component
-// ============================================================
-
-// ─────────────────────────────────────────────────────────────
-// /documents/new/page.tsx
-// ─────────────────────────────────────────────────────────────
-// src/app/documents/new/page.tsx
-
 import { requireAuth } from '@/lib/auth'
 import { AppShell } from '@/components/layout/AppShell'
 import { SubmitDocumentForm } from '@/components/documents/SubmitDocumentForm'
-import { PageHeader } from '@/components/ui'
+import { QuickAddForm } from '@/components/documents/QuickAddForm'
+import { NewDocumentTabs } from '@/components/documents/NewDocumentTabs'
 
 export async function generateMetadata() {
   return { title: 'Submit Document | F&C Command Center' }
@@ -30,20 +21,28 @@ export default async function NewDocumentPage() {
       .limit(8),
   ])
 
+  const documentTypes = docTypesResult.data ?? []
+  const campuses = campusesResult.data ?? []
+  const meetings = meetingsResult.data ?? []
+
   return (
-    <AppShell user={profile} org={profile.organizations} title="Submit Document">
+    <AppShell user={profile} org={profile.organizations} title="Add Document">
       <div className="p-6">
-        <PageHeader
-          title="Submit Document for Review"
-          subtitle="PMSI or IDEA internal documents for FAC consideration"
+        <NewDocumentTabs
+          submitForm={
+            <SubmitDocumentForm
+              documentTypes={documentTypes}
+              campuses={campuses}
+              meetings={meetings}
+            />
+          }
+          quickAddForm={
+            <QuickAddForm
+              documentTypes={documentTypes}
+              campuses={campuses}
+            />
+          }
         />
-        <div className="mt-6">
-          <SubmitDocumentForm
-            documentTypes={docTypesResult.data ?? []}
-            campuses={campusesResult.data ?? []}
-            meetings={meetingsResult.data ?? []}
-          />
-        </div>
       </div>
     </AppShell>
   )
