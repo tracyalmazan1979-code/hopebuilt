@@ -56,6 +56,13 @@ export function QuickAddForm({
   const [vendorName, setVendorName] = useState('')
   const [fundingSource, setFundingSource] = useState('')
   const [requesterName, setRequesterName] = useState('')
+  // Tracker columns
+  const [fcDate, setFcDate] = useState('')
+  const [budgetAmendmentReqd, setBudgetAmendmentReqd] = useState(false)
+  const [bodItemType, setBodItemType] = useState('')
+  const [dateSentViaAdobe, setDateSentViaAdobe] = useState('')
+  const [dateApprovedSentOut, setDateApprovedSentOut] = useState('')
+  const [wetSignatureNotary, setWetSignatureNotary] = useState('')
 
   // Upload a file to Supabase storage — returns the storage path (not a public URL)
   async function uploadFile(file: File): Promise<string> {
@@ -177,6 +184,12 @@ export function QuickAddForm({
           vendor_name: vendorName || null,
           funding_source: fundingSource || null,
           presenter_name: requesterName || null,
+          fc_date: fcDate || null,
+          budget_amendment_reqd: budgetAmendmentReqd,
+          bod_item_type: bodItemType || null,
+          date_sent_via_adobe: dateSentViaAdobe || null,
+          date_approved_sent_out: dateApprovedSentOut || null,
+          wet_signature_notary: wetSignatureNotary || null,
           created_by: user?.id,
         })
         .select()
@@ -427,6 +440,44 @@ export function QuickAddForm({
         <div className="space-y-1.5">
           <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Description</label>
           <textarea className="input-base min-h-[60px]" rows={2} placeholder="Brief description..." value={description} onChange={e => setDescription(e.target.value)} />
+        </div>
+
+        {/* Tracker columns */}
+        <div className="pt-3 mt-3 border-t border-gray-100">
+          <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">Tracker Fields (Optional)</div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">FC Date</label>
+              <input type="date" className="input-base" value={fcDate} onChange={e => setFcDate(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">BOD Item Type</label>
+              <input type="text" className="input-base" placeholder="Consent / Action / Ratification" value={bodItemType} onChange={e => setBodItemType(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Date Sent via Adobe</label>
+              <input type="date" className="input-base" value={dateSentViaAdobe} onChange={e => setDateSentViaAdobe(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Date Approved / Sent Out</label>
+              <input type="date" className="input-base" value={dateApprovedSentOut} onChange={e => setDateApprovedSentOut(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">WET Signature / Notary</label>
+              <input type="text" className="input-base" placeholder="e.g. Notary required" value={wetSignatureNotary} onChange={e => setWetSignatureNotary(e.target.value)} />
+            </div>
+            <div className="flex items-center gap-2 pt-6">
+              <input type="checkbox" id="budget_amendment_qa" checked={budgetAmendmentReqd} onChange={e => setBudgetAmendmentReqd(e.target.checked)} className="w-4 h-4" />
+              <label htmlFor="budget_amendment_qa" className="text-xs font-semibold text-gray-700">Budget Amendment Required</label>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-1.5">

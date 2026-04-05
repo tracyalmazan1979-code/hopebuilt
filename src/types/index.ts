@@ -200,6 +200,13 @@ export interface Document {
   budget_sheet_url: string | null
   caf_pdf_url: string | null
   submitter_type: 'pmsi' | 'idea_internal' | null
+  // Tracker columns (from F&C Weekly Doc Review Tracker)
+  budget_amendment_reqd: boolean | null
+  date_sent_via_adobe: string | null
+  date_approved_sent_out: string | null
+  wet_signature_notary: string | null
+  bod_item_type: string | null
+  fc_date: string | null
   created_by: string | null
   created_at: string
   updated_at: string
