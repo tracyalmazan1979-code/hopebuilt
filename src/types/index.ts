@@ -17,6 +17,9 @@ export type MeetingType =
   | 'fac_doc_rev'
   | 'tactical'
   | 'bod'
+  | 'predoc_pmsi'
+  | 'predoc_idea'
+  | 'layne_solo_review'
 
 export type StateRegion =
   | 'TX'
@@ -192,6 +195,11 @@ export interface Document {
   on_hold_reason: string | null
   on_hold_since: string | null
   additional_notes: string | null
+  file_status: 'pending_doc' | 'received' | 'not_required' | null
+  file_url: string | null
+  budget_sheet_url: string | null
+  caf_pdf_url: string | null
+  submitter_type: 'pmsi' | 'idea_internal' | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -309,6 +317,8 @@ export interface DashboardMetrics {
   pending_execution: number
   fully_executed: number
   on_hold: number
+  pending_doc_count: number
+  overdue_submissions: number
   pipeline_value: number | null
   total_active: number
 }

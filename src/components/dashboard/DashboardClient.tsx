@@ -66,13 +66,14 @@ function DocCard({ doc }: { doc: ActivePipelineItem }) {
     normal:  'border-l-blue-400',
   }
 
-  const stateClass = {
+  const stateColors: Record<string, string> = {
     TX:     'state-tx',
     FL:     'state-fl',
     OH:     'state-oh',
     IPS_FL: 'state-fl',
     TX_IPS: 'state-tx',
-  }[doc.state] ?? 'state-tx'
+  }
+  const stateClass = stateColors[doc.state] ?? 'state-tx'
 
   const amount = doc.amount != null
     ? doc.amount < 0

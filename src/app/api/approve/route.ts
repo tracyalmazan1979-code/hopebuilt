@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
   // Fetch document details for the confirmation + next notification
   const { data: doc } = await supabase
     .from('documents')
-    .select('*, approvals(* order by stage_order asc)')
+    .select('*, approvals(*)')
     .eq('id', document_id)
     .single()
 

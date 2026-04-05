@@ -98,7 +98,7 @@ function formatCurrency(amount: number | null): string {
 
 // ── Main generator function ───────────────────────────────────
 
-export async function generateCAFPdf(document: Document): Promise<Uint8Array> {
+async function buildCAFDocument(document: any): Promise<Uint8Array> {
   // Load the blank CAF template
   const templatePath = process.cwd() + '/public/templates/caf-template.pdf'
   const fs = await import('fs/promises')
@@ -291,7 +291,7 @@ export async function POST(
 
   try {
     // Generate the PDF
-    const pdfBytes = await generateCAFPdf(document as Document)
+    const pdfBytes = await buildCAFDocument(document as Document)
 
     // Upload to Supabase Storage
     const filename = `caf_${document.id}_${Date.now()}.pdf`

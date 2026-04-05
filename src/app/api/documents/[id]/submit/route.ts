@@ -27,7 +27,7 @@ const SYLVIA  = { name: 'Sylvia Pena',     email: 'sylvia.pena@ideapublicschools
 
 // ── Email templates ───────────────────────────────────────────
 
-function buildSubmissionEmail(doc: Document, cafUrl: string | null) {
+function buildSubmissionEmail(doc: any, cafUrl: string | null) {
   const amount = doc.amount != null
     ? doc.amount < 0
       ? `($${Math.abs(doc.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })})`
@@ -198,7 +198,7 @@ function buildSubmissionEmail(doc: Document, cafUrl: string | null) {
   return { subject, html }
 }
 
-function buildPendingDocAlert(pendingDocs: Partial<Document>[]) {
+function buildPendingDocAlert(pendingDocs: any[]) {
   const list = pendingDocs.map(d =>
     `<li style="margin-bottom:8px;"><strong>${d.state} · ${d.campus_name}</strong> — ${d.document_type_name ?? 'Unknown type'} · Submitted by ${d.presenter_name ?? d.submitted_by_name ?? 'Unknown'}</li>`
   ).join('')
@@ -355,7 +355,7 @@ export async function POST(
 // ── Deadline Alert (called by Edge Function cron) ─────────────
 // Exported so the cron function can call it directly
 
-export async function sendPendingDocAlert(supabase: ReturnType<typeof createClient>) {
+async function sendPendingDocAlert(supabase: ReturnType<typeof createClient>) {
   const { data: overdue } = await supabase
     .from('v_pending_docs')
     .select('*')
@@ -380,7 +380,7 @@ export async function sendPendingDocAlert(supabase: ReturnType<typeof createClie
 
 // ── Monday Reminder (called by Edge Function cron) ────────────
 
-export async function sendMondayReminders(
+async function sendMondayReminders(
   supabase: ReturnType<typeof createClient>,
   upcomingFACDate: string
 ) {

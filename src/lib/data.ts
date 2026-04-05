@@ -65,9 +65,9 @@ export async function getDocumentWithApprovals(
     .from('documents')
     .select(`
       *,
-      approvals(* order by stage_order asc),
+      approvals(*),
       bod_items(*),
-      action_items(* order by created_at desc),
+      action_items(*),
       meetings(*)
     `)
     .eq('id', documentId)

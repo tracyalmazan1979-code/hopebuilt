@@ -17,9 +17,9 @@ export default async function DocumentDetailPage({
     supabase.from('users').select('*, organizations(*)').eq('id', authUser.id).single(),
     supabase.from('documents').select(`
       *,
-      approvals(* order by stage_order asc),
+      approvals(*),
       bod_items(*),
-      action_items(* order by created_at desc),
+      action_items(*),
       meetings(id, title, meeting_date, meeting_type)
     `).eq('id', params.id).single(),
   ])
