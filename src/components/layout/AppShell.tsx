@@ -143,10 +143,12 @@ function Sidebar({
 
       {/* Logo */}
       <div className="px-4 pt-5 pb-4 border-b border-default">
-        <div className="leading-none">
-          <span className="font-black text-[18px] tracking-[0.25em] uppercase text-white bg-[#1B1464] px-2 py-0.5 rounded-sm">IDEA</span>
+        <div className="bg-[#0072CE] rounded-md px-3 py-2.5 text-center">
+          <div className="text-yellow-300 text-[16px] leading-none mb-0.5">&#10045;</div>
+          <div className="font-black text-[16px] tracking-[0.3em] uppercase text-white leading-none">IDEA</div>
+          <div className="text-[8px] text-white/80 tracking-wider mt-0.5">Public Schools</div>
         </div>
-        <div className="text-[10px] font-semibold text-gray-500 mt-1.5 tracking-wide">
+        <div className="text-[10px] font-semibold text-gray-500 mt-2 tracking-wide text-center">
           Facilities & Construction
         </div>
       </div>
