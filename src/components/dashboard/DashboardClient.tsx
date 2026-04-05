@@ -37,10 +37,10 @@ function MetricCard({
       'hover:-translate-y-px transition-transform',
       accentMap[accent]
     )}>
-      <div className="text-lg mb-1">{icon}</div>
-      <div className="font-syne font-black text-2xl text-default leading-none">{value}</div>
-      <div className="text-xs font-medium text-muted mt-1">{label}</div>
-      {sub && <div className="text-[10px] text-dim mt-1 font-mono">{sub}</div>}
+      <div className="text-lg mb-2">{icon}</div>
+      <div className="font-sans font-extrabold text-2xl text-gray-900 leading-none">{value}</div>
+      <div className="text-xs font-medium text-gray-500 mt-1.5">{label}</div>
+      {sub && <div className="text-[10px] text-gray-400 mt-1 font-mono">{sub}</div>}
     </div>
   )
 
