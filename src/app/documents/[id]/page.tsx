@@ -19,8 +19,7 @@ export default async function DocumentDetailPage({
       *,
       approvals(*),
       bod_items(*),
-      action_items(*),
-      meetings(id, title, meeting_date, meeting_type)
+      action_items(*)
     `).eq('id', params.id).single(),
   ])
 
