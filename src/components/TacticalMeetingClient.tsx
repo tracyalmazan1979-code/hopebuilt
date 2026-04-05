@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateDocument } from '@/lib/data'
+import { updateDocument, createTacticalItem } from '@/lib/data'
 import { createClient } from '@/lib/supabase'
 import type { User } from '@/types'
 import { PipelineBadge, FileBadge, StateBadge, Amount, EmptyState, PageHeader } from '@/components/ui'
@@ -314,9 +314,196 @@ export function TacticalMeetingClient({
               </div>
             )}
 
+            {/* Add Tactical Item */}
+            <AddTacticalItemSection
+              meetingId={selectedMeetingId}
+              orgId={currentUser.org_id}
+              nextAgendaNumber={Math.max(0, ...tacticalOnly.map(i => i.agenda_number ?? 0)) + 1}
+              onAdded={() => router.refresh()}
+            />
+
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+// ── Add Tactical Item form ────────────────────────────────────
+
+function AddTacticalItemSection({
+  meetingId, orgId, nextAgendaNumber, onAdded,
+}: {
+  meetingId: string
+  orgId: string
+  nextAgendaNumber: number
+  onAdded: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({
+    state:           'TX',
+    campus_name:     '',
+    subtopic:        '',
+    presenter_name:  '',
+    description:     '',
+    discussion_notes: '',
+    agenda_number:   nextAgendaNumber,
+  })
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.campus_name.trim()) return
+    setSaving(true)
+    try {
+      await createTacticalItem({
+        meeting_id: meetingId,
+        org_id: orgId,
+        state: form.state,
+        campus_name: form.campus_name.trim(),
+        subtopic: form.subtopic.trim() || undefined,
+        presenter_name: form.presenter_name.trim() || undefined,
+        description: form.description.trim() || undefined,
+        discussion_notes: form.discussion_notes.trim() || undefined,
+        agenda_number: form.agenda_number,
+      })
+      setForm({
+        state: form.state,
+        campus_name: '',
+        subtopic: '',
+        presenter_name: '',
+        description: '',
+        discussion_notes: '',
+        agenda_number: form.agenda_number + 1,
+      })
+      onAdded()
+    } catch (err) {
+      console.error(err)
+      alert('Failed to add item')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!open) {
+    return (
+      <div className="pt-4">
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-2 w-full justify-center px-4 py-3 rounded-md border border-dashed border-default text-sm font-semibold text-muted hover:text-default hover:border-strong hover:bg-surface-2 transition-colors"
+        >
+          <Plus size={14} /> Add Tactical Item
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="card p-4 border-amber-500/30">
+      <div className="flex items-center justify-between mb-3">
+        <div className="section-title">New Tactical Item</div>
+        <button
+          onClick={() => setOpen(false)}
+          className="text-xs text-dim hover:text-default"
+        >
+          Cancel
+        </button>
+      </div>
+      <form onSubmit={submit} className="space-y-3">
+        <div className="grid grid-cols-[80px_100px_1fr_1fr] gap-3">
+          <div>
+            <label className="text-[10px] font-semibold text-dim uppercase tracking-wider">Agenda #</label>
+            <input
+              type="number"
+              className="input-base text-xs mt-1"
+              value={form.agenda_number}
+              onChange={e => setForm(f => ({ ...f, agenda_number: Number(e.target.value) }))}
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-semibold text-dim uppercase tracking-wider">State</label>
+            <select
+              className="input-base text-xs mt-1"
+              value={form.state}
+              onChange={e => setForm(f => ({ ...f, state: e.target.value }))}
+            >
+              <option value="TX">TX</option>
+              <option value="FL">FL</option>
+              <option value="OH">OH</option>
+              <option value="IPS_FL">IPS_FL</option>
+              <option value="TX_IPS">TX_IPS</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-semibold text-dim uppercase tracking-wider">Campus / Item *</label>
+            <input
+              required
+              className="input-base text-xs mt-1"
+              placeholder="e.g. IDEA Henry"
+              value={form.campus_name}
+              onChange={e => setForm(f => ({ ...f, campus_name: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-semibold text-dim uppercase tracking-wider">Presenter</label>
+            <input
+              className="input-base text-xs mt-1"
+              placeholder="e.g. PMSI, Layne, Sylvia"
+              value={form.presenter_name}
+              onChange={e => setForm(f => ({ ...f, presenter_name: e.target.value }))}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-semibold text-dim uppercase tracking-wider">Subtopic</label>
+          <input
+            className="input-base text-xs mt-1"
+            placeholder="Optional"
+            value={form.subtopic}
+            onChange={e => setForm(f => ({ ...f, subtopic: e.target.value }))}
+          />
+        </div>
+
+        <div>
+          <label className="text-[10px] font-semibold text-dim uppercase tracking-wider">Description</label>
+          <textarea
+            rows={2}
+            className="input-base text-xs mt-1"
+            placeholder="What is being discussed"
+            value={form.description}
+            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+          />
+        </div>
+
+        <div>
+          <label className="text-[10px] font-semibold text-dim uppercase tracking-wider">Notes</label>
+          <textarea
+            rows={2}
+            className="input-base text-xs mt-1"
+            placeholder="Discussion notes"
+            value={form.discussion_notes}
+            onChange={e => setForm(f => ({ ...f, discussion_notes: e.target.value }))}
+          />
+        </div>
+
+        <div className="flex items-center justify-end gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="px-4 py-1.5 text-xs font-semibold text-muted hover:text-default"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saving || !form.campus_name.trim()}
+            className="px-4 py-1.5 text-xs font-bold bg-amber-500 text-black rounded-md hover:bg-amber-400 transition-colors disabled:opacity-50"
+          >
+            {saving ? 'Adding…' : 'Add Item'}
+          </button>
+        </div>
+      </form>
     </div>
   )
 }

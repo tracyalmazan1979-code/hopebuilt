@@ -297,6 +297,28 @@ export async function getTacticalItems(meetingId: string) {
   return data as TacticalItem[]
 }
 
+export async function createTacticalItem(payload: {
+  meeting_id:     string
+  org_id:         string
+  state?:         string
+  campus_name?:   string
+  subtopic?:      string
+  presenter_name?: string
+  description?:   string
+  discussion_notes?: string
+  agenda_number?: number
+}) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('tactical_items')
+    .insert(payload)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as TacticalItem
+}
+
 export async function updateTacticalItem(
   itemId: string,
   updates: Partial<TacticalItem>
