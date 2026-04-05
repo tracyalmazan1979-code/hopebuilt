@@ -357,8 +357,7 @@ export function SubmitDocumentForm({
       const path = `uploads/${user?.id}/${Date.now()}_${file.name}`
       const { error } = await supabase.storage.from('documents').upload(path, file)
       if (error) throw error
-      const { data } = supabase.storage.from('documents').getPublicUrl(path)
-      setFileUrl(data.publicUrl)
+      setFileUrl(path)
       setValue('file_status', 'received')
     } catch (err) {
       setError('File upload failed. Please try again.')
@@ -378,8 +377,7 @@ export function SubmitDocumentForm({
       const path = `uploads/${user?.id}/${Date.now()}_budget_${file.name}`
       const { error } = await supabase.storage.from('documents').upload(path, file)
       if (error) throw error
-      const { data } = supabase.storage.from('documents').getPublicUrl(path)
-      setBudgetFileUrl(data.publicUrl)
+      setBudgetFileUrl(path)
     } catch (err) {
       setError('Budget sheet upload failed. Please try again.')
     } finally {

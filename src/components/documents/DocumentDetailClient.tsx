@@ -246,7 +246,7 @@ export function DocumentDetailClient({
             </button>
             {doc.caf_pdf_url && (
               <a
-                href={doc.caf_pdf_url}
+                href={`/api/documents/${doc.id}/generate-caf`}
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-400 border border-green-500/20 bg-green-500/8 rounded-md hover:bg-green-500/15 transition-colors"

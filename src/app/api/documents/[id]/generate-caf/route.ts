@@ -340,23 +340,23 @@ export async function POST(
 
     if (uploadError) throw uploadError
 
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from('documents')
-      .getPublicUrl(storagePath)
-
-    // Update document record with CAF URL and generated timestamp
+    // Store the path (not public URL) for private bucket
     await supabase
       .from('documents')
       .update({
-        caf_pdf_url: urlData.publicUrl,
+        caf_pdf_url: storagePath,
         caf_generated_at: new Date().toISOString(),
       })
       .eq('id', params.id)
 
+    // Create a signed URL for immediate download
+    const { data: signedData } = await supabase.storage
+      .from('documents')
+      .createSignedUrl(storagePath, 3600)
+
     return NextResponse.json({
       success: true,
-      caf_pdf_url: urlData.publicUrl,
+      caf_pdf_url: signedData?.signedUrl ?? storagePath,
       generated_at: new Date().toISOString(),
     })
 
@@ -390,6 +390,14 @@ export async function GET(
     return NextResponse.json({ error: 'CAF not yet generated' }, { status: 404 })
   }
 
-  // Redirect to the stored PDF
-  return NextResponse.redirect(document.caf_pdf_url)
+  // Create a signed URL for the private file
+  const { data: signedData } = await supabase.storage
+    .from('documents')
+    .createSignedUrl(document.caf_pdf_url, 3600)
+
+  if (!signedData?.signedUrl) {
+    return NextResponse.json({ error: 'Failed to generate download link' }, { status: 500 })
+  }
+
+  return NextResponse.redirect(signedData.signedUrl)
 }

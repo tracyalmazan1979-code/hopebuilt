@@ -57,15 +57,14 @@ export function QuickAddForm({
   const [fundingSource, setFundingSource] = useState('')
   const [requesterName, setRequesterName] = useState('')
 
-  // Upload a file to Supabase storage
+  // Upload a file to Supabase storage — returns the storage path (not a public URL)
   async function uploadFile(file: File): Promise<string> {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     const path = `uploads/${user?.id}/${Date.now()}_${file.name}`
     const { error: uploadError } = await supabase.storage.from('documents').upload(path, file)
     if (uploadError) throw uploadError
-    const { data } = supabase.storage.from('documents').getPublicUrl(path)
-    return data.publicUrl
+    return path
   }
 
   // Single file upload + AI extraction
