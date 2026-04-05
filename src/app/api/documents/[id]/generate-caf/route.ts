@@ -258,7 +258,36 @@ async function buildCAFDocument(document: any): Promise<Uint8Array> {
     drawText('urgent_reason', data.urgent_reason)
   }
 
-  // Section III signature lines are left blank — signed by hand
+  // Section III — Embed submitter signature if available
+  if (document.submitter_signature) {
+    try {
+      const sigBase64 = document.submitter_signature.replace(/^data:image\/png;base64,/, '')
+      const sigBytes = Uint8Array.from(atob(sigBase64), c => c.charCodeAt(0))
+      const sigImage = await pdfDoc.embedPng(sigBytes)
+
+      // Scale to fit signature area (approx 150x40 px)
+      const sigDims = sigImage.scale(0.35)
+      page.drawImage(sigImage, {
+        x: 100,
+        y: height - 750,  // submitter signature line area
+        width: Math.min(sigDims.width, 150),
+        height: Math.min(sigDims.height, 40),
+      })
+
+      // Print name under signature
+      if (document.requester_name) {
+        page.drawText(document.requester_name, {
+          x: 100,
+          y: height - 765,
+          size: 8,
+          font,
+          color: black,
+        })
+      }
+    } catch (sigError) {
+      console.error('Failed to embed signature:', sigError)
+    }
+  }
 
   const pdfBytes = await pdfDoc.save()
   return pdfBytes
