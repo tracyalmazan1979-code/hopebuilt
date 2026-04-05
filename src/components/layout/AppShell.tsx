@@ -21,6 +21,7 @@ interface NavItem {
   badge?:   number
   color?:   string
   section?: string
+  exact?:   boolean
 }
 
 function buildNavItems(metrics?: DashboardMetrics | null): NavItem[] {
@@ -40,8 +41,14 @@ function buildNavItems(metrics?: DashboardMetrics | null): NavItem[] {
       badge: metrics ? metrics.total_active : undefined,
     },
     {
-      label: 'Tracker (29-col)',
+      label: 'Tracker — Doc Review',
       href:  '/tracker',
+      icon:  <Table2 size={15} />,
+      exact: true,
+    },
+    {
+      label: 'Tracker — Tactical',
+      href:  '/tracker/tactical',
       icon:  <Table2 size={15} />,
     },
     {
@@ -185,8 +192,10 @@ function Sidebar({
               </div>
             )}
             {section.items.map(item => {
-              const isActive = pathname === item.href ||
-                (item.href !== '/dashboard' && pathname.startsWith(item.href))
+              const isActive = item.exact
+                ? pathname === item.href
+                : pathname === item.href ||
+                  (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'))
 
               return (
                 <Link
