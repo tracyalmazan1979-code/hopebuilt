@@ -38,8 +38,17 @@ export function TacticalMeetingClient({
   const [saving,       setSaving]       = useState<Record<string, boolean>>({})
   const [saved,        setSaved]        = useState<Record<string, boolean>>({})
 
-  const tacticalMeetings = meetings.filter(m => m.meeting_type === 'tactical')
-  const facMeetings      = meetings.filter(m => m.meeting_type === 'fac_doc_rev')
+  const [orgTab, setOrgTab] = useState<'all' | 'idea_tx' | 'ips'>('all')
+  const IPS_STATES = ['FL', 'OH', 'IPS_FL']
+
+  function inOrg(m: any) {
+    if (orgTab === 'idea_tx') return m.state === 'TX' || m.state === 'TX_IPS'
+    if (orgTab === 'ips')     return IPS_STATES.includes(m.state)
+    return true
+  }
+
+  const tacticalMeetings = meetings.filter(m => m.meeting_type === 'tactical' && inOrg(m))
+  const facMeetings      = meetings.filter(m => m.meeting_type === 'fac_doc_rev' && inOrg(m))
 
   // FAC carryover items (from facDocuments)
   const carryoverItems = facDocuments
@@ -65,6 +74,25 @@ export function TacticalMeetingClient({
       {/* Meeting selector sidebar */}
       <div className="w-64 flex-shrink-0 border-r border-default overflow-y-auto">
         <div className="p-4">
+          {/* Org tabs */}
+          <div className="flex rounded-md overflow-hidden border border-default mb-4">
+            {[
+              { v: 'idea_tx' as const, label: 'IDEA TX' },
+              { v: 'ips' as const,     label: 'IPS' },
+              { v: 'all' as const,     label: 'All' },
+            ].map(t => (
+              <button
+                key={t.v}
+                onClick={() => setOrgTab(t.v)}
+                className={clsx(
+                  'flex-1 px-2 py-1.5 text-[10px] font-semibold border-r border-default last:border-r-0 transition-colors',
+                  orgTab === t.v ? 'bg-blue-500/15 text-blue-400' : 'text-muted hover:text-default'
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
           <div className="section-title mb-3">Tactical Meetings</div>
           <div className="space-y-1">
             {tacticalMeetings.length === 0 ? (
